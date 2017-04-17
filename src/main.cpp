@@ -8,8 +8,7 @@
 #include <boost/core/null_deleter.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include "VoiceRecord.h"
-#include "re/IflytekRecognizer.h"
-#include "SpeechRecognizer.h"
+#include "asr/engine/IflytekRecognizer.h"
 
 int main(int, char *[]) {
     // create sink backend
@@ -67,7 +66,6 @@ int main(int, char *[]) {
     sleep(5);
     recognizer->end();
     voiceRecord.stop();
-    while (1)
-        sleep(1000);
+    sleep(1);
     return 0;
 }

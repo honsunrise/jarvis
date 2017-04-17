@@ -41,8 +41,8 @@ public:
 
 protected:
     std::function<void(const char *result, char is_last)> _on_result;
-    std::function<void()> _on_speech_begin;
-    std::function<void()> _on_speech_end;
+    std::function<void()> _on_begin;
+    std::function<void()> _on_end;
     std::function<void(int reason)> _on_error;
 private:
     recognizer_product_info _product_info;

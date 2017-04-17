@@ -15,12 +15,12 @@ SpeechRecognizer::SpeechRecognizer(std::function<void(const char *result, char i
                                    std::function<void()> on_speech_begin,
                                    std::function<void()> on_speech_end,
                                    std::function<void(int reason)> on_error)
-        : _on_result(on_result), _on_speech_begin(on_speech_begin),
-          _on_speech_end(on_speech_end), _on_error(on_error) {
+        : _on_result(on_result), _on_begin(on_speech_begin),
+          _on_end(on_speech_end), _on_error(on_error) {
 }
 
 SpeechRecognizer::SpeechRecognizer(std::function<void(const char *result, char is_last)> on_result,
                                    std::function<void(int reason)> on_error)
-        : _on_result(on_result), _on_error(on_error), _on_speech_begin(nullptr),
-          _on_speech_end(nullptr) {
+        : _on_result(on_result), _on_error(on_error), _on_begin(nullptr),
+          _on_end(nullptr) {
 }

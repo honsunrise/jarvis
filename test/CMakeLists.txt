@@ -34,11 +34,13 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
-#set(SOURCE_STACK_FILES stack_tests.cpp)
-#add_executable(stack-test ${SOURCE_STACK_FILES})
-#target_link_libraries(stack-test zRPC gtest_main)
-#add_test(NAME stack-test COMMAND stack-test)
+include_directories(../src)
+
+set(SOURCE_HTTP_FILES http/http-tests.cpp)
+add_executable(http-tests ${SOURCE_HTTP_FILES})
+target_link_libraries(http-tests gtest_main)
+add_test(NAME stack-tests COMMAND stack-tests)
 
 if(Boost_FOUND)
-    #target_link_libraries(stack-test ${Boost_LIBRARIES})
+    target_link_libraries(http-tests ${Boost_LIBRARIES})
 endif()

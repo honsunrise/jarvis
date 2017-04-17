@@ -15,6 +15,7 @@ endif()
 
 file(GLOB_RECURSE SOURCE_FILES ${PROJECT_SOURCE_DIR}/src/* ${PROJECT_SOURCE_DIR}/include/*)
 include_directories(include)
+include_directories(src)
 
 add_executable(jarvis ${SOURCE_FILES})
 target_link_libraries(jarvis pthread dl rt asound msc)
@@ -25,4 +26,4 @@ endif()
 
 # Test
 enable_testing()
-# add_subdirectory(test)
+add_subdirectory(test)

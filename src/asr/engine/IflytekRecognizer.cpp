@@ -79,8 +79,8 @@ int IflytekRecognizer::start() {
     audio_status = MSP_AUDIO_SAMPLE_FIRST;
     state = IFLYTEK_STATE_STARTED;
 
-    if (_on_speech_begin)
-        _on_speech_begin();
+    if (_on_begin)
+        _on_begin();
     return 0;
 }
 
@@ -121,8 +121,8 @@ int IflytekRecognizer::listen(char *data, size_t len) {
         }
 
         if (session_id) {
-            if (_on_speech_end)
-                _on_speech_end();
+            if (_on_end)
+                _on_end();
             QISRSessionEnd(session_id, "VAD Normal");
             session_id = NULL;
         }
