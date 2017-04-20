@@ -5,13 +5,13 @@
 #include "LPTProcessor.h"
 #include "utils/AsyncHttpClient.h"
 
-LPTProcessor::LPTProcessor(const std::function<void(const char *, char)> &on_result,
+LPTProcessor::LPTProcessor(const std::function<void(int reason)> &on_result,
                            const std::function<void()> &on_speech_begin, const std::function<void()> &on_speech_end,
                            const std::function<void(int)> &on_error) : NLP(on_result, on_speech_begin, on_speech_end,
                                                                            on_error) {}
 
 
-LPTProcessor::LPTProcessor(const std::function<void(const char *, char)> &on_result,
+LPTProcessor::LPTProcessor(const std::function<void(int reason)> &on_result,
                            const std::function<void(int)> &on_error) : NLP(on_result, on_error) {}
 
 int LPTProcessor::initialize() {

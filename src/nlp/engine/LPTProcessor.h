@@ -9,10 +9,10 @@
 
 class LPTProcessor : public NLP {
 public:
-    LPTProcessor(const std::function<void(const char *, char)> &on_result, const std::function<void()> &on_speech_begin,
+    LPTProcessor(const std::function<void(int reason)> &on_result, const std::function<void()> &on_speech_begin,
                  const std::function<void()> &on_speech_end, const std::function<void(int)> &on_error);
 
-    LPTProcessor(const std::function<void(const char *, char)> &on_result, const std::function<void(int)> &on_error);
+    LPTProcessor(const std::function<void(int reason)> &on_result, const std::function<void(int)> &on_error);
 
     int initialize() override;
 

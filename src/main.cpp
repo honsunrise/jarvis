@@ -9,8 +9,13 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include "VoiceRecord.h"
 #include "asr/engine/IflytekRecognizer.h"
+#include "KeyEventHandler.h"
 
 int main(int, char *[]) {
+    KeyEventHandler keyEventHandler("/dev/input/by-id/usb-Heng_Yu_Technology_Poker-event-kbd", [](int key, bool press){
+        BOOST_LOG_TRIVIAL(info) << key << press;
+    });
+    keyEventHandler.start();
     // create sink backend
     boost::shared_ptr<boost::log::sinks::text_ostream_backend> backend(
             new boost::log::sinks::text_ostream_backend());

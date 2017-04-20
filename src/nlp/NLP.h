@@ -19,12 +19,12 @@ typedef struct _processor_product_info_ {
 
 class NLP {
 public:
-    explicit NLP(std::function<void(const char *result, char is_last)> on_result,
+    explicit NLP(std::function<void(int reason)> on_result,
                  std::function<void()> on_speech_begin,
                  std::function<void()> on_speech_end,
                  std::function<void(int reason)> on_error);
 
-    explicit NLP(std::function<void(const char *result, char is_last)> on_result,
+    explicit NLP(std::function<void(int reason)> on_result,
                  std::function<void(int reason)> on_error);
 
     virtual ~NLP();
