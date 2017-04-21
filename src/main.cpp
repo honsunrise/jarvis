@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <atomic>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/sinks/sync_frontend.hpp>
@@ -12,6 +13,8 @@
 #include "KeyEventHandler.h"
 
 int main(int, char *[]) {
+    int status = 0;
+    std::atomic_bool global_exit(false), start_listing(false);
     // create sink backend
     boost::shared_ptr<boost::log::sinks::text_ostream_backend> backend(
             new boost::log::sinks::text_ostream_backend());
@@ -34,7 +37,7 @@ int main(int, char *[]) {
             boost::log::expressions::stream
                     << boost::log::expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %T")
                     << " [" << boost::log::trivial::severity << "]\t"
-                    << boost::log::expressions::smessage
+                    << "Jarvis " << boost::log::expressions::smessage
     );
 
     // sink filter
@@ -49,32 +52,66 @@ int main(int, char *[]) {
     // setup common attributes
     boost::log::add_common_attributes();
 
-
-    KeyEventHandler keyEventHandler("/dev/input/by-id/usb-CHERRY_Mechanical_Keyboard_KGFJDCG99A795383-event-kbd", [](int key, bool press){
-        BOOST_LOG_TRIVIAL(info) << "Key event" << key << press;
-    });
-    keyEventHandler.start();
-
-
     SpeechRecognizer *recognizer = new IflytekRecognizer([](const char *result, char is_last) {
-        BOOST_LOG_TRIVIAL(info) << "Jarvis recognize something [" << result << "]!";
+        BOOST_LOG_TRIVIAL(info) << "recognize something [" << result << "]!";
     }, [](int reason) {
-        BOOST_LOG_TRIVIAL(info) << "Jarvis happen something [" << reason << "]!";
+        BOOST_LOG_TRIVIAL(info) << "happen something [" << reason << "]!";
     });
 
-    BOOST_LOG_TRIVIAL(info) << "Jarvis is started!";
+    BOOST_LOG_TRIVIAL(info) << "is started!";
     recognizer->initialize();
-    VoiceRecord voiceRecord([&recognizer](char *data, size_t len, void *param) {
-        BOOST_LOG_TRIVIAL(info) << "Jarvis listen something!";
+    VoiceRecord *voiceRecord = new VoiceRecord([&recognizer](char *data, size_t len, void *param) {
+        BOOST_LOG_TRIVIAL(info) << "listen something!";
         recognizer->listen(data, len);
     }, 0);
-    std::vector<record_dev_id> &&device_list = voiceRecord.list();
-    voiceRecord.open(device_list[0], DEFAULT_FORMAT);
-    voiceRecord.start();
-    recognizer->start();
-    sleep(5);
-    recognizer->end();
-    voiceRecord.stop();
-    sleep(1);
-    return 0;
+
+    std::vector<record_dev_id> &&device_list = voiceRecord->list();
+
+    KeyEventHandler *keyEventHandler;
+    keyEventHandler = new KeyEventHandler("/dev/input/by-id/usb-Heng_Yu_Technology_Poker-event-kbd",
+                                          [&](int key, bool press) {
+                                              BOOST_LOG_TRIVIAL(info) << "Info event code : " << key
+                                                                      << " " << press;
+                                              if (press && key == KEY_HOME) {
+                                                  if (!start_listing) {
+                                                      start_listing = true;
+                                                      BOOST_LOG_TRIVIAL(info) << "Start listing";
+                                                      BOOST_LOG_TRIVIAL(info) << "Open cap "
+                                                                              << voiceRecord->open(
+                                                                                      device_list[0],
+                                                                                      DEFAULT_FORMAT);;
+                                                      BOOST_LOG_TRIVIAL(info) << "Start cap "
+                                                                              << voiceRecord->start();
+                                                      BOOST_LOG_TRIVIAL(info) << "Start recognizer "
+                                                                              << recognizer->start();
+                                                      sleep(5);
+                                                      BOOST_LOG_TRIVIAL(info) << "End recognizer" << recognizer->end();
+                                                      BOOST_LOG_TRIVIAL(info) << "Stop cap " << voiceRecord->stop();
+                                                      BOOST_LOG_TRIVIAL(info) << "Close cap " << voiceRecord->close();
+                                                      start_listing = false;
+                                                  }
+                                              } else if (!press && key == KEY_Q) {
+                                                  global_exit = true;
+                                              }
+                                          }, [&](int code) {
+                BOOST_LOG_TRIVIAL(error) << "Key event handler error : " << code;
+                global_exit = true;
+            });
+
+    if ((status = keyEventHandler->start()) < 0) {
+        BOOST_LOG_TRIVIAL(error) << "Key event handler register error : " << status;
+        goto exit;
+    }
+    while (!global_exit) {
+        BOOST_LOG_TRIVIAL(info) << "everything is ok!";
+        sleep(2);
+    }
+    exit:
+    delete keyEventHandler;
+    recognizer->uninitialize();
+
+    voiceRecord->close();
+    delete recognizer;
+    delete voiceRecord;
+    return status;
 }

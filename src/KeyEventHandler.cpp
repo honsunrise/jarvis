@@ -7,109 +7,80 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <dirent.h>
-#include <linux/input.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <termios.h>
-#include <signal.h>
 #include <boost/log/trivial.hpp>
 #include "KeyEventHandler.h"
 
 
-KeyEventHandler::KeyEventHandler(std::string device, std::function<void(int key, bool press)> call_back)
-        : _call_back(call_back), device(device) {
+KeyEventHandler::KeyEventHandler(std::string device, std::function<void(int key, bool press)> call_back,
+                                 std::function<void(int)> error_callback)
+        : _callback(call_back), _device(device), _exit(false), _error_callback(error_callback) {
 
 }
 
 KeyEventHandler::~KeyEventHandler() {
-
+    _exit = true;
+    if (_future.valid())
+        _future.wait();
 }
 
-void KeyEventHandler::start() {
+int KeyEventHandler::start() {
     char name[256] = "Unknown";
 
     if ((getuid()) != 0)
-        BOOST_LOG_TRIVIAL(info) << "You are not root! This may not work...n";
+        BOOST_LOG_TRIVIAL(info) << "You are not root! This may not work...";
 
+    do {
+        fd = open(_device.c_str(), O_RDONLY | O_NOCTTY | O_CLOEXEC);
+    } while (fd == -1 && errno == EINTR);
+    if (fd == -1) {
+        BOOST_LOG_TRIVIAL(error) << _device << " is not a vaild device.";
+        return -errno;
+    }
 
-    _thread = new std::thread([&]() {
-                                  int fd;
+//    errno = 0;
+//    if (ioctl(fd, EVIOCGRAB, 1)) {
+//        const int saved_errno = errno;
+//        close(fd);
+//        return errno = (saved_errno) ? -errno : -EACCES;
+//    }
 
-                                  //Open Device
-                                  if ((fd = open(device.c_str(), O_RDWR, 0)) < 0)
-                                      BOOST_LOG_TRIVIAL(info) << device << " is not a vaild device.n";
+    //Print Device Name
+    ioctl(fd, EVIOCGNAME (sizeof(name)), name);
+    BOOST_LOG_TRIVIAL(info) << "Reading input event from : " << name;
 
-                                  //Print Device Nameggddggg
-                                  ioctl(fd, EVIOCGNAME (sizeof(name)), name);
-                                  BOOST_LOG_TRIVIAL(info) << "Reading From : " << name;
-                                  while (1) {
-                                      size_t size = sizeof(struct input_event);
-                                      ssize_t rd;
-                                      struct input_event ev[64];
-                                      if ((rd = read(fd, ev, size * 64)) < 0) {
-                                          BOOST_LOG_TRIVIAL(info) << "Read error " << rd;
-                                      }
+    auto _process = [&]() {
+        int status = 0;
+        while (!_exit) {
+            struct input_event ev;
+            ssize_t n = read(fd, &ev, sizeof ev);
+            if (n == (ssize_t) -1) {
+                if (errno == EINTR)
+                    continue;
+                status = errno;
+                break;
 
-                                      if (ev[0].value != ' ' && ev[1].value == 1) { // Only read the key press event
-                                          _call_back(ev[1].code, ev[1].type == 1);
-                                      }
+            } else if (n == sizeof ev) {
+                /* We consider only key presses and auto repeats. */
+                if (ev.type != EV_KEY || (ev.value != 0 && ev.value != 1 && ev.value != 2))
+                    continue;
+                std::thread([this, ev](){_callback(ev.code, ev.value > 0);}).detach();
+            } else if (n == (ssize_t) 0) {
+                status = ENOENT;
+                break;
+            } else {
+                status = EIO;
+                break;
+            }
+        }
+        if (!_exit)
+            std::thread([this, status](){_error_callback(status);}).detach();
+        return -status;
+    };
 
-                                      n = read(dev->fd, &ev, sizeof ev);
-                                      if (n == (ssize_t)-1) {
-                                          if (errno == EINTR)
-                                              continue;
-                                          status = errno;
-                                          break;
-
-                                      } else
-                                      if (n == sizeof ev) {
-
-                                          /* We consider only key presses and autorepeats. */
-                                          if (ev.type != EV_KEY || (ev.value != 1 && ev.value != 2))
-                                              continue;
-
-                                          switch (ev.code) {
-                                              case KEY_0: digit = '0'; break;
-                                              case KEY_1: digit = '1'; break;
-                                              case KEY_2: digit = '2'; break;
-                                              case KEY_3: digit = '3'; break;
-                                              case KEY_4: digit = '4'; break;
-                                              case KEY_5: digit = '5'; break;
-                                              case KEY_6: digit = '6'; break;
-                                              case KEY_7: digit = '7'; break;
-                                              case KEY_8: digit = '8'; break;
-                                              case KEY_9: digit = '9'; break;
-                                              default:    digit = '\0';
-                                          }
-
-                                          /* Non-digit key ends the code, except at beginning of code. */
-                                          if (digit == '\0') {
-                                              if (!len)
-                                                  continue;
-                                              status = 0;
-                                              break;
-                                          }
-
-                                          if (len < length)
-                                              buffer[len] = digit;
-                                          len++;
-
-                                          continue;
-
-                                      } else
-                                      if (n == (ssize_t)0) {
-                                          status = ENOENT;
-                                          break;
-
-                                      } else {
-                                          status = EIO;
-                                          break;
-                                      }
-                                  }
-                              }
-    );
+    std::packaged_task<int(void)> task(_process);
+    _future = task.get_future();
+    std::thread thread(std::move(task));
+    thread.detach();
+    return 0;
 }
 
