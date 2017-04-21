@@ -15,6 +15,8 @@ endif()
 
 file(GLOB_RECURSE SOURCE_FILES ${PROJECT_SOURCE_DIR}/src/* ${PROJECT_SOURCE_DIR}/include/*)
 include_directories(include)
+link_directories(/home/zhsyourai/sdks/xf_sdk/libs/x64)
+
 include_directories(src)
 
 add_executable(jarvis ${SOURCE_FILES})

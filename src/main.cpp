@@ -12,10 +12,6 @@
 #include "KeyEventHandler.h"
 
 int main(int, char *[]) {
-    KeyEventHandler keyEventHandler("/dev/input/by-id/usb-Heng_Yu_Technology_Poker-event-kbd", [](int key, bool press){
-        BOOST_LOG_TRIVIAL(info) << key << press;
-    });
-    keyEventHandler.start();
     // create sink backend
     boost::shared_ptr<boost::log::sinks::text_ostream_backend> backend(
             new boost::log::sinks::text_ostream_backend());
@@ -52,6 +48,14 @@ int main(int, char *[]) {
 
     // setup common attributes
     boost::log::add_common_attributes();
+
+
+    KeyEventHandler keyEventHandler("/dev/input/by-id/usb-CHERRY_Mechanical_Keyboard_KGFJDCG99A795383-event-kbd", [](int key, bool press){
+        BOOST_LOG_TRIVIAL(info) << "Key event" << key << press;
+    });
+    keyEventHandler.start();
+
+
     SpeechRecognizer *recognizer = new IflytekRecognizer([](const char *result, char is_last) {
         BOOST_LOG_TRIVIAL(info) << "Jarvis recognize something [" << result << "]!";
     }, [](int reason) {
