@@ -52,18 +52,20 @@ int main(int, char *[]) {
     // setup common attributes
     boost::log::add_common_attributes();
 
+    BOOST_LOG_TRIVIAL(info) << "is started!";
+
     SpeechRecognizer *recognizer = new IflytekRecognizer([](const char *result, char is_last) {
         BOOST_LOG_TRIVIAL(info) << "recognize something [" << result << "]!";
     }, [](int reason) {
         BOOST_LOG_TRIVIAL(info) << "happen something [" << reason << "]!";
     });
 
-    BOOST_LOG_TRIVIAL(info) << "is started!";
-    recognizer->initialize();
     VoiceRecord *voiceRecord = new VoiceRecord([&recognizer](char *data, size_t len, void *param) {
         BOOST_LOG_TRIVIAL(info) << "listen something!";
         recognizer->listen(data, len);
     }, 0);
+
+    recognizer->initialize();
 
     std::vector<record_dev_id> &&device_list = voiceRecord->list();
 

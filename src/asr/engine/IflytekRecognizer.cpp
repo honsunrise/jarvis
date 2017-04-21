@@ -117,7 +117,7 @@ int IflytekRecognizer::listen(char *data, size_t len) {
             if (rslt && _on_result)
                 _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE ? 1 : 0);
 
-            sleep(100); /* for cpu occupy, should sleep here */
+            usleep(500); /* for cpu occupy, should sleep here */
         }
 
         if (session_id) {
@@ -158,7 +158,7 @@ int IflytekRecognizer::end() {
         }
         if (NULL != rslt && _on_result)
             _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE ? 1 : 0);
-        sleep(100);
+        usleep(500);
     }
 
     QISRSessionEnd(session_id, "normal");

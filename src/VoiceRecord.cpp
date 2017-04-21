@@ -51,8 +51,9 @@ int VoiceRecord::open(record_dev_id dev, wave_format fmt) {
 }
 
 int VoiceRecord::close() {
-    if (_state != RECORD_STATE_READY || _state != RECORD_STATE_RECORDING)
+    if (!(_state == RECORD_STATE_READY || _state == RECORD_STATE_RECORDING))
         return -RECORD_ERR_NOT_READY;
+
     if (_state == RECORD_STATE_RECORDING)
         stop();
 
@@ -428,7 +429,7 @@ void VoiceRecord::record_thread() {
             break;
 
         if (_state != RECORD_STATE_RECORDING)
-            usleep(100000);
+            usleep(1000);
 
         if (pcm_read(frames) != frames) {
             return;
