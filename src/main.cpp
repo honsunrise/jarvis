@@ -10,6 +10,7 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include "VoiceRecord.h"
 #include "asr/engine/IflytekRecognizer.h"
+#include "nlp/engine/LPTProcessor.h"
 #include "KeyEventHandler.h"
 
 int main(int, char *[]) {
@@ -54,8 +55,17 @@ int main(int, char *[]) {
 
     BOOST_LOG_TRIVIAL(info) << "is started!";
 
-    SpeechRecognizer *recognizer = new IflytekRecognizer([](const char *result, char is_last) {
+    NLP *nlp = new LPTProcessor([](int reason){
+
+    }, [](int code){
+
+    });
+
+    SpeechRecognizer *recognizer = new IflytekRecognizer([nlp](const char *result, char is_last) {
         BOOST_LOG_TRIVIAL(info) << "recognize something [" << result << "]!";
+        nlp->start();
+        nlp->process(result);
+        nlp->end();
     }, [](int reason) {
         BOOST_LOG_TRIVIAL(info) << "happen something [" << reason << "]!";
     });
@@ -66,6 +76,8 @@ int main(int, char *[]) {
     }, 0);
 
     recognizer->initialize();
+
+    nlp->initialize();
 
     std::vector<record_dev> &&device_list = voiceRecord->list();
 
@@ -111,8 +123,9 @@ int main(int, char *[]) {
     exit:
     delete keyEventHandler;
     recognizer->uninitialize();
-
+    nlp->uninitialize();
     voiceRecord->close();
+    delete nlp;
     delete recognizer;
     delete voiceRecord;
     return status;

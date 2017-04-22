@@ -28,11 +28,11 @@ protected:
     int uninitialize() override;
 
 public:
-    IflytekRecognizer(const std::function<void(const char *, char)> &on_result,
+    IflytekRecognizer(const std::function<void(const char *, bool)> &on_result,
                       const std::function<void()> &on_speech_begin, const std::function<void()> &on_speech_end,
                       const std::function<void(int)> &on_error);
 
-    IflytekRecognizer(const std::function<void(const char *, char)> &on_result,
+    IflytekRecognizer(const std::function<void(const char *, bool)> &on_result,
                       const std::function<void(int)> &on_error);
 
     int start() override;

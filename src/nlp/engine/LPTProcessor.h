@@ -5,6 +5,7 @@
 #ifndef JARVIS_LPTPROCESSOR_H
 #define JARVIS_LPTPROCESSOR_H
 
+#include <utils/AsyncHttpClient.h>
 #include "../NLP.h"
 
 class LPTProcessor : public NLP {
@@ -23,6 +24,10 @@ public:
     int process(std::string data) override;
 
     int end() override;
+
+private:
+    std::string api_key;
+    boost::asio::io_service *io_service;
 };
 
 
