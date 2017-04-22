@@ -17,12 +17,12 @@ typedef struct _recognizer_product_info_ {
 
 class SpeechRecognizer {
 public:
-    explicit SpeechRecognizer(std::function<void(const char *result, char is_last)> on_result,
+    explicit SpeechRecognizer(std::function<void(const char *result, bool is_last)> on_result,
                               std::function<void()> on_speech_begin,
                               std::function<void()> on_speech_end,
                               std::function<void(int reason)> on_error);
 
-    explicit SpeechRecognizer(std::function<void(const char *result, char is_last)> on_result,
+    explicit SpeechRecognizer(std::function<void(const char *result, bool is_last)> on_result,
                               std::function<void(int reason)> on_error);
 
     virtual ~SpeechRecognizer();
@@ -40,7 +40,7 @@ public:
     virtual int end() = 0;
 
 protected:
-    std::function<void(const char *result, char is_last)> _on_result;
+    std::function<void(const char *result, bool is_last)> _on_result;
     std::function<void()> _on_begin;
     std::function<void()> _on_end;
     std::function<void(int reason)> _on_error;

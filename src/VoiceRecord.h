@@ -31,10 +31,11 @@ typedef enum {
     RECORD_STATE_RECORDING,    /* Started	*/
 } RECORD_STATE;
 
-typedef union {
-    char *name;
+typedef struct {
     int id;
-} record_dev_id;
+    std::string name;
+    std::string desc;
+} record_dev;
 
 #define WAVE_FORMAT_PCM  1
 
@@ -65,7 +66,7 @@ public:
 
     virtual ~VoiceRecord();
 
-    int open(record_dev_id dev, wave_format fmt);
+    int open(const record_dev &dev, wave_format fmt);
 
     int close();
 
@@ -75,7 +76,7 @@ public:
 
     RECORD_STATE state();
 
-    std::vector<record_dev_id> list();
+    std::vector<record_dev> list();
 
 private:
     int setup();
@@ -90,15 +91,15 @@ private:
 
     static inline int format_ms_to_alsa(const wave_format *fmt, snd_pcm_format_t *format);
 
+    ssize_t pcm_read(size_t r_count);
+
+    void record_thread();
+
     static size_t get_pcm_device_cnt(snd_pcm_stream_t stream);
 
     static size_t list_pcm(snd_pcm_stream_t stream, char ***name_out, char ***desc_out);
 
-    ssize_t pcm_read(size_t rcount);
-
-    void list_record_dev();
-
-    void record_thread();
+    void _prepare_device_list();
 
     unsigned int sample_rate;
     unsigned int sample_bit;
@@ -114,11 +115,9 @@ private:
     std::function<void(char *data, size_t len, void *user_para)> _data_callback;
     void *_user_parm;
     RECORD_STATE _state;
-    std::string _name;
-    snd_pcm_t *_pcm;
+    snd_pcm_t *_handle;
     wave_format _fmt;
-
-    std::vector<record_dev_id> record_dev_list;
+    std::vector<record_dev> record_dev_list;
 };
 
 

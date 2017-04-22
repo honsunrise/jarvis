@@ -67,7 +67,7 @@ int main(int, char *[]) {
 
     recognizer->initialize();
 
-    std::vector<record_dev_id> &&device_list = voiceRecord->list();
+    std::vector<record_dev> &&device_list = voiceRecord->list();
 
     KeyEventHandler *keyEventHandler;
     keyEventHandler = new KeyEventHandler("/dev/input/by-id/usb-Heng_Yu_Technology_Poker-event-kbd",

@@ -10,7 +10,7 @@
 #include <msp_cmn.h>
 #include "IflytekRecognizer.h"
 
-IflytekRecognizer::IflytekRecognizer(const std::function<void(const char *, char)> &on_result,
+IflytekRecognizer::IflytekRecognizer(const std::function<void(const char *, bool)> &on_result,
                                      const std::function<void()> &on_speech_begin,
                                      const std::function<void()> &on_speech_end,
                                      const std::function<void(int)> &on_error) : SpeechRecognizer(on_result,
@@ -19,7 +19,7 @@ IflytekRecognizer::IflytekRecognizer(const std::function<void(const char *, char
                                                                                                   on_error) {
 }
 
-IflytekRecognizer::IflytekRecognizer(const std::function<void(const char *, char)> &on_result,
+IflytekRecognizer::IflytekRecognizer(const std::function<void(const char *, bool)> &on_result,
                                      const std::function<void(int)> &on_error) : SpeechRecognizer(on_result,
                                                                                                   on_error) {
 
@@ -105,17 +105,15 @@ int IflytekRecognizer::listen(char *data, size_t len) {
             return ret;
         }
         if (NULL != rslt && _on_result)
-            _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE ? 1 : 0);
+            _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);
     }
 
     if (MSP_EP_AFTER_SPEECH == ep_stat) {
         int errcode;
-        const char *rslt;
-
         while (rec_stat != MSP_REC_STATUS_COMPLETE) {
             rslt = QISRGetResult(session_id, &rec_stat, 0, &errcode);
             if (rslt && _on_result)
-                _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE ? 1 : 0);
+                _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);
 
             usleep(500); /* for cpu occupy, should sleep here */
         }
@@ -157,7 +155,7 @@ int IflytekRecognizer::end() {
             return ret;
         }
         if (NULL != rslt && _on_result)
-            _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE ? 1 : 0);
+            _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);
         usleep(500);
     }
 
