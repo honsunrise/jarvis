@@ -8,13 +8,13 @@
 // for convenience
 using json = nlohmann::json;
 
-LPTProcessor::LPTProcessor(const std::function<void(int reason)> &on_result,
+LPTProcessor::LPTProcessor(const std::function<void(std::vector<CONLL> conll)> &on_result,
                            const std::function<void()> &on_speech_begin, const std::function<void()> &on_speech_end,
                            const std::function<void(int)> &on_error) : NLP(on_result, on_speech_begin, on_speech_end,
                                                                            on_error) {}
 
 
-LPTProcessor::LPTProcessor(const std::function<void(int reason)> &on_result,
+LPTProcessor::LPTProcessor(const std::function<void(std::vector<CONLL> conll)> &on_result,
                            const std::function<void(int)> &on_error) : NLP(on_result, on_error) {}
 
 int LPTProcessor::initialize() {
@@ -38,7 +38,7 @@ int LPTProcessor::start() {
 
 int LPTProcessor::process(std::string data) {
     std::stringstream ss;
-    ss << "pattern=dp&format=json";
+    ss << "pattern=all&format=json";
     ss << "&api_key=" << api_key;
     ss << "&text=" << data;
     AsyncHttpClient c(*io_service, "ltpapi.voicecloud.cn", AsyncHttpClient::POST, "/analysis/", ss.str(),
@@ -47,7 +47,27 @@ int LPTProcessor::process(std::string data) {
                       },
                       [&](unsigned int code, std::vector<std::string> headers, std::string content) {
                           auto j = json::parse(content);
-                          _on_result(0);
+                          j = j[0][0];
+                          std::vector<CONLL> conlls;
+                          for (auto &k : j) {
+                              CONLL conll;
+                              conll.id = k["id"];
+                              conll.pos = k["pos"];
+                              conll.ne = k["ne"];
+                              conll.content = k["cont"];
+                              conll.parent = k["parent"];
+                              conll.relate = k["relate"];
+                              for (auto &l : k["arg"]) {
+                                  CONLL_PREDICATE conll_predicate;
+                                  conll_predicate.id = l["id"];
+                                  conll_predicate.type = l["type"];
+                                  conll_predicate.begin = l["beg"];
+                                  conll_predicate.end = l["end"];
+                                  conll.arg.push_back(conll_predicate);
+                              }
+                              conlls.push_back(conll);
+                          }
+                          _on_result(conlls);
                       });
     io_service->run();
     return 0;

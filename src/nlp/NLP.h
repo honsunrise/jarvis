@@ -8,6 +8,24 @@
 
 #include <cstddef>
 #include <functional>
+#include <vector>
+
+typedef struct _CONLL_PREDICATE_ {
+    int id;
+    std::string type;
+    int begin;
+    int end;
+} CONLL_PREDICATE;
+
+typedef struct _CONLL_ {
+    int id;
+    std::string content;
+    std::string pos;
+    std::string ne;
+    int parent;
+    std::string relate;
+    std::vector<CONLL_PREDICATE> arg;
+} CONLL;
 
 typedef struct _processor_product_info_ {
     const char *name;
@@ -19,12 +37,12 @@ typedef struct _processor_product_info_ {
 
 class NLP {
 public:
-    explicit NLP(std::function<void(int reason)> on_result,
+    explicit NLP(std::function<void(std::vector<CONLL> conll)> on_result,
                  std::function<void()> on_speech_begin,
                  std::function<void()> on_speech_end,
                  std::function<void(int reason)> on_error);
 
-    explicit NLP(std::function<void(int reason)> on_result,
+    explicit NLP(std::function<void(std::vector<CONLL> conll)> on_result,
                  std::function<void(int reason)> on_error);
 
     virtual ~NLP();
@@ -45,7 +63,7 @@ protected:
     std::function<void()> _on_begin;
     std::function<void()> _on_end;
     std::function<void(int reason)> _on_error;
-    std::function<void(int reason)> _on_result;
+    std::function<void(std::vector<CONLL> conll)> _on_result;
 };
 
 

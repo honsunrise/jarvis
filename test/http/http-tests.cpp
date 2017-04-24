@@ -8,7 +8,7 @@ static long _http_get_test() {
     try {
         boost::asio::io_service io_service;
         AsyncHttpClient c(io_service, "ltpapi.voicecloud.cn", AsyncHttpClient::POST, "/analysis/",
-                          "api_key=81o4m9i1s5X5B2u5w1r8cb1jljqgfkpjqQKXypmj&text=老贾打开灯。&pattern=dp&format=json",
+                          "api_key=81o4m9i1s5X5B2u5w1r8cb1jljqgfkpjqQKXypmj&text=老贾打开灯。&pattern=all&format=json",
                           [](std::string error) {
                               std::cout << error << std::endl;
                           }, [](unsigned int code, std::vector<std::string> headers, std::string content) {
@@ -17,7 +17,7 @@ static long _http_get_test() {
                 });
         io_service.run();
         AsyncHttpClient c1(io_service, "ltpapi.voicecloud.cn", AsyncHttpClient::POST, "/analysis/",
-                          "api_key=81o4m9i1s5X5B2u5w1r8cb1jljqgfkpjqQKXypmj&text=老贾打开灯。&pattern=dp&format=json",
+                          "api_key=81o4m9i1s5X5B2u5w1r8cb1jljqgfkpjqQKXypmj&text=老贾打开灯。&pattern=all&format=json",
                           [](std::string error) {
                               std::cout << error << std::endl;
                           }, [](unsigned int code, std::vector<std::string> headers, std::string content) {

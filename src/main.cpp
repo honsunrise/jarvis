@@ -54,11 +54,13 @@ int main(int, char *[]) {
     boost::log::add_common_attributes();
 
     BOOST_LOG_TRIVIAL(info) << "is started!";
-    NLP *nlp = new LPTProcessor([](int reason){
-
+    NLP *nlp = new LPTProcessor([](std::vector<CONLL> conll){
+        BOOST_LOG_TRIVIAL(info) << "NLP [" << conll[1].content << "]!";
     }, [](int code){
 
     });
+
+    nlp->initialize();
 
     SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp](const char *result, char is_last) {
         BOOST_LOG_TRIVIAL(info) << "recognize something [" << result << "]!";
@@ -71,7 +73,7 @@ int main(int, char *[]) {
 
     recognizer->initialize();
 
-    nlp->initialize();
+
 
     VoiceRecord *voiceRecord = new VoiceRecord([&recognizer](char *data, size_t len, void *param) {
         BOOST_LOG_TRIVIAL(info) << "listen something!";
@@ -117,7 +119,7 @@ int main(int, char *[]) {
     }
     while (!global_exit) {
         BOOST_LOG_TRIVIAL(info) << "everything is ok!";
-        sleep(2);
+        sleep(5);
     }
     exit:
     delete keyEventHandler;
