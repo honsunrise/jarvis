@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.0)
 project(jarvis)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_C_STANDARD gnu99)
 
 set(Boost_USE_STATIC_LIBS        ON) # only find static libs
 set(Boost_USE_MULTITHREADED      ON)

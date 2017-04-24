@@ -31,11 +31,11 @@ typedef enum {
     RECORD_STATE_RECORDING,    /* Started	*/
 } RECORD_STATE;
 
-typedef struct {
+typedef struct _void_record_dev {
     int id;
     std::string name;
     std::string desc;
-} record_dev;
+} voice_record_dev;
 
 #define WAVE_FORMAT_PCM  1
 
@@ -66,7 +66,7 @@ public:
 
     virtual ~VoiceRecord();
 
-    int open(const record_dev &dev, wave_format fmt);
+    int open(const voice_record_dev &dev, wave_format fmt);
 
     int close();
 
@@ -76,7 +76,7 @@ public:
 
     RECORD_STATE state();
 
-    std::vector<record_dev> list();
+    std::vector<voice_record_dev> list();
 
 private:
     int setup();
@@ -94,8 +94,6 @@ private:
     ssize_t pcm_read(size_t r_count);
 
     void record_thread();
-
-    static size_t get_pcm_device_cnt(snd_pcm_stream_t stream);
 
     static size_t list_pcm(snd_pcm_stream_t stream, char ***name_out, char ***desc_out);
 
@@ -117,7 +115,7 @@ private:
     RECORD_STATE _state;
     snd_pcm_t *_handle;
     wave_format _fmt;
-    std::vector<record_dev> record_dev_list;
+    std::vector<voice_record_dev> record_dev_list;
 };
 
 

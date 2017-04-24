@@ -16,7 +16,7 @@ VoiceRecord::~VoiceRecord() {
     _state = RECORD_STATE_CLOSING;
 }
 
-int VoiceRecord::open(const record_dev &dev, wave_format fmt) {
+int VoiceRecord::open(const voice_record_dev &dev, wave_format fmt) {
     if (_state != RECORD_STATE_CREATED) {
         return -1;
     }
@@ -61,7 +61,7 @@ int VoiceRecord::close() {
     if (_handle) {
         snd_pcm_drain(_handle);
         snd_pcm_close(_handle);
-        _handle = NULL;
+        _handle = nullptr;
     }
     _free_rec_buffer();
     _state = RECORD_STATE_CREATED;
@@ -243,7 +243,7 @@ int VoiceRecord::_prepare_rec_buffer() {
 void VoiceRecord::_free_rec_buffer() {
     if (_audio_buf) {
         free(_audio_buf);
-        _audio_buf = NULL;
+        _audio_buf = nullptr;
     }
 }
 
@@ -269,7 +269,7 @@ ssize_t VoiceRecord::pcm_read(size_t r_count) {
     while (count > 0) {
         frames = snd_pcm_readi(_handle, data, count);
         if (frames < 0) {
-            frames = snd_pcm_recover(_handle, frames, 0);
+            frames = snd_pcm_recover(_handle, (int) frames, 0);
         }
 
         if (frames > 0) {
@@ -308,87 +308,83 @@ void VoiceRecord::record_thread() {
 }
 
 static void free_name_desc(char **name_or_desc) {
-    if (NULL == name_or_desc)
+    if (nullptr == name_or_desc)
         return;
     while (*name_or_desc != nullptr) {
         free(*name_or_desc);
-        *name_or_desc = NULL;
+        *name_or_desc = nullptr;
         name_or_desc++;
     }
 }
 
-size_t VoiceRecord::get_pcm_device_cnt(snd_pcm_stream_t stream) {
-    void **hints, **n;
-    char *io, *name;
-    const char *filter;
-    size_t cnt = 0;
-
-    if (snd_device_name_hint(-1, "pcm", &hints) < 0)
-        return 0;
-    n = hints;
-    filter = stream == SND_PCM_STREAM_CAPTURE ? "Input" : "Output";
-    while (*n != NULL) {
-        io = snd_device_name_get_hint(*n, "IOID");
-        name = snd_device_name_get_hint(*n, "NAME");
-        if (name && (io == NULL || strcmp(io, filter) == 0))
-            cnt++;
-        if (io != NULL)
-            free(io);
-        if (name != NULL)
-            free(name);
-        n++;
-    }
-    snd_device_name_free_hint(hints);
-    return cnt;
-}
-
 size_t VoiceRecord::list_pcm(snd_pcm_stream_t stream, char ***name_out, char ***desc_out) {
     void **hints, **n;
-    char **name, **descr;
+    char **names, **descr;
     char *io;
     const char *filter;
     size_t cnt = 0;
     int i = 0;
+    *name_out = nullptr;
+    *desc_out = nullptr;
 
     if (snd_device_name_hint(-1, "pcm", &hints) < 0)
         return 0;
     n = hints;
-    cnt = get_pcm_device_cnt(stream);
+
+    filter = stream == SND_PCM_STREAM_CAPTURE ? "Input" : "Output";
+
+    while (*n != nullptr) {
+        char *name;
+        io = snd_device_name_get_hint(*n, "IOID");
+        name = snd_device_name_get_hint(*n, "NAME");
+        if (name && (io == nullptr || strcmp(io, filter) == 0))
+            cnt++;
+        if (io != nullptr)
+            free(io);
+        if (name != nullptr)
+            free(name);
+        n++;
+    }
+
     if (!cnt) {
         goto fail;
     }
 
-    *name_out = (char **) calloc(sizeof(char *), (1 + cnt));
-    if (*name_out == NULL)
+    *name_out = (char **) malloc((1 + cnt) * sizeof(char *));
+    if (*name_out == nullptr)
         goto fail;
-    *desc_out = (char **) calloc(sizeof(char *), (1 + cnt));
-    if (*desc_out == NULL)
+    *desc_out = (char **) malloc((1 + cnt) * sizeof(char *));
+    if (*desc_out == nullptr)
         goto fail;
 
-    /* the last one is a flag, NULL */
-    name_out[cnt] = NULL;
-    desc_out[cnt] = NULL;
-    name = *name_out;
+    /* the last one is a flag, nullptr */
+    (*name_out)[cnt] = nullptr;
+    (*desc_out)[cnt] = nullptr;
+    names = *name_out;
     descr = *desc_out;
 
-    filter = stream == SND_PCM_STREAM_CAPTURE ? "Input" : "Output";
-    while (*n != NULL && i < cnt) {
-        *name = snd_device_name_get_hint(*n, "NAME");
+    n = hints;
+    while (*n != nullptr && i < cnt) {
+        *names = snd_device_name_get_hint(*n, "NAME");
         *descr = snd_device_name_get_hint(*n, "DESC");
         io = snd_device_name_get_hint(*n, "IOID");
-        if (io != NULL && strcmp(io, filter) != 0) {
-            if (*name) free(*name);
+        if (io != nullptr && strcmp(io, filter) != 0) {
+            if (*names) free(*names);
             if (*descr) free(*descr);
         } else {
-            if (*descr == NULL) {
+            if (*names == nullptr) {
+                *names = (char *) malloc(4);
+                memset(*names, 0, 4);
+            }
+            if (*descr == nullptr) {
                 *descr = (char *) malloc(4);
                 memset(*descr, 0, 4);
             }
-            name++;
+            names++;
             descr++;
             i++;
         }
-        if (io != NULL)
+        if (io != nullptr)
             free(io);
         n++;
     }
@@ -401,7 +397,7 @@ size_t VoiceRecord::list_pcm(snd_pcm_stream_t stream, char ***name_out, char ***
     return 0;
 }
 
-std::vector<record_dev> VoiceRecord::list() {
+std::vector<voice_record_dev> VoiceRecord::list() {
     return record_dev_list;
 }
 
@@ -410,7 +406,7 @@ void VoiceRecord::_prepare_device_list() {
     char **desc_array;
     size_t count = list_pcm(SND_PCM_STREAM_CAPTURE, &name_array, &desc_array);
     for (int i = 0; i < count; ++i) {
-        record_dev _dev;
+        voice_record_dev _dev;
         _dev.name = name_array[i];
         _dev.desc = desc_array[i];
         _dev.id = i;

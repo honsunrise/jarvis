@@ -54,14 +54,13 @@ int main(int, char *[]) {
     boost::log::add_common_attributes();
 
     BOOST_LOG_TRIVIAL(info) << "is started!";
-
     NLP *nlp = new LPTProcessor([](int reason){
 
     }, [](int code){
 
     });
 
-    SpeechRecognizer *recognizer = new IflytekRecognizer([nlp](const char *result, char is_last) {
+    SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp](const char *result, char is_last) {
         BOOST_LOG_TRIVIAL(info) << "recognize something [" << result << "]!";
         nlp->start();
         nlp->process(result);
@@ -70,16 +69,16 @@ int main(int, char *[]) {
         BOOST_LOG_TRIVIAL(info) << "happen something [" << reason << "]!";
     });
 
+    recognizer->initialize();
+
+    nlp->initialize();
+
     VoiceRecord *voiceRecord = new VoiceRecord([&recognizer](char *data, size_t len, void *param) {
         BOOST_LOG_TRIVIAL(info) << "listen something!";
         recognizer->listen(data, len);
     }, 0);
 
-    recognizer->initialize();
-
-    nlp->initialize();
-
-    std::vector<record_dev> &&device_list = voiceRecord->list();
+    std::vector<voice_record_dev> &&device_list = voiceRecord->list();
 
     KeyEventHandler *keyEventHandler;
     keyEventHandler = new KeyEventHandler("/dev/input/by-id/usb-Heng_Yu_Technology_Poker-event-kbd",
