@@ -60,8 +60,6 @@ int main(int, char *[]) {
 
     });
 
-    nlp->initialize();
-
     SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp](const char *result, char is_last) {
         BOOST_LOG_TRIVIAL(info) << "recognize something [" << result << "]!";
         nlp->start();
@@ -71,16 +69,21 @@ int main(int, char *[]) {
         BOOST_LOG_TRIVIAL(info) << "happen something [" << reason << "]!";
     });
 
-    recognizer->initialize();
-
-
-
     VoiceRecord *voiceRecord = new VoiceRecord([&recognizer](char *data, size_t len, void *param) {
         BOOST_LOG_TRIVIAL(info) << "listen something!";
         recognizer->listen(data, len);
     }, 0);
 
+    nlp->initialize();
+
+    recognizer->initialize();
+
     std::vector<voice_record_dev> &&device_list = voiceRecord->list();
+
+    BOOST_LOG_TRIVIAL(info) << "Open cap "
+                            << voiceRecord->open(
+                                    device_list[0],
+                                    DEFAULT_FORMAT);;
 
     KeyEventHandler *keyEventHandler;
     keyEventHandler = new KeyEventHandler("/dev/input/by-id/usb-Heng_Yu_Technology_Poker-event-kbd",
@@ -91,18 +94,13 @@ int main(int, char *[]) {
                                                   if (!start_listing) {
                                                       start_listing = true;
                                                       BOOST_LOG_TRIVIAL(info) << "Start listing";
-                                                      BOOST_LOG_TRIVIAL(info) << "Open cap "
-                                                                              << voiceRecord->open(
-                                                                                      device_list[0],
-                                                                                      DEFAULT_FORMAT);;
                                                       BOOST_LOG_TRIVIAL(info) << "Start cap "
                                                                               << voiceRecord->start();
                                                       BOOST_LOG_TRIVIAL(info) << "Start recognizer "
                                                                               << recognizer->start();
                                                       sleep(5);
-                                                      BOOST_LOG_TRIVIAL(info) << "End recognizer" << recognizer->end();
+                                                      BOOST_LOG_TRIVIAL(info) << "End recognizer " << recognizer->end();
                                                       BOOST_LOG_TRIVIAL(info) << "Stop cap " << voiceRecord->stop();
-                                                      BOOST_LOG_TRIVIAL(info) << "Close cap " << voiceRecord->close();
                                                       start_listing = false;
                                                   }
                                               } else if (!press && key == KEY_Q) {
@@ -125,7 +123,7 @@ int main(int, char *[]) {
     delete keyEventHandler;
     recognizer->uninitialize();
     nlp->uninitialize();
-    voiceRecord->close();
+    BOOST_LOG_TRIVIAL(info) << "Close cap " << voiceRecord->close();
     delete nlp;
     delete recognizer;
     delete voiceRecord;

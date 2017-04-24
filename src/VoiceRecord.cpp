@@ -50,7 +50,7 @@ int VoiceRecord::open(const voice_record_dev &dev, wave_format fmt) {
 }
 
 int VoiceRecord::close() {
-    if (!(_state == RECORD_STATE_READY || _state == RECORD_STATE_RECORDING))
+    if (!(_state == RECORD_STATE_READY || _state == RECORD_STATE_RECORDING || _state == RECORD_STATE_STOPPING))
         return -RECORD_ERR_NOT_READY;
 
     if (_state == RECORD_STATE_RECORDING)
@@ -75,6 +75,7 @@ int VoiceRecord::start() {
     if (_state == RECORD_STATE_RECORDING)
         return 0;
 
+    ret = snd_pcm_prepare(_handle);
     ret = snd_pcm_start(_handle);
     if (ret == 0)
         _state = RECORD_STATE_RECORDING;
@@ -283,6 +284,7 @@ ssize_t VoiceRecord::pcm_read(size_t r_count) {
 }
 
 void VoiceRecord::record_thread() {
+    BOOST_LOG_TRIVIAL(info) << "record_thread start!";
     size_t frames, bytes;
     sigset_t mask, old_mask;
 
@@ -358,10 +360,10 @@ size_t VoiceRecord::list_pcm(snd_pcm_stream_t stream, char ***name_out, char ***
         goto fail;
 
     /* the last one is a flag, nullptr */
-    (*name_out)[cnt] = nullptr;
-    (*desc_out)[cnt] = nullptr;
     names = *name_out;
     descr = *desc_out;
+    names[cnt] = nullptr;
+    descr[cnt] = nullptr;
 
     n = hints;
     while (*n != nullptr && i < cnt) {

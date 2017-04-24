@@ -38,7 +38,7 @@ void IflytekRecognizer::_error_happen(int errcode) {
 
 int IflytekRecognizer::initialize() {
     int errcode;
-    const char *login_params = "appid = 58e74906, work_dir = .";
+    const char *login_params = "appid = 58e74906, work_dir = ., timeout = 5000";
 
     errcode = MSPLogin(NULL, NULL, login_params);
     if (MSP_SUCCESS != errcode) {
@@ -58,6 +58,7 @@ int IflytekRecognizer::initialize() {
 }
 
 int IflytekRecognizer::uninitialize() {
+    MSPLogout();
     return 0;
 }
 
