@@ -54,24 +54,56 @@ int main(int, char *[]) {
     boost::log::add_common_attributes();
 
     BOOST_LOG_TRIVIAL(info) << "is started!";
-    NLP *nlp = new LPTProcessor([](std::vector<CONLL> conll){
+    NLP *nlp = new LPTProcessor([](std::vector<CONLL> conll) {
         BOOST_LOG_TRIVIAL(info) << "NLP [" << conll[1].content << "]!";
-    }, [](int code){
+    }, [](int code) {
 
     });
 
+    static std::string end_flag[] = {"。", "？", "！"};
+
     SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp](const char *result, char is_last) {
-        BOOST_LOG_TRIVIAL(info) << "recognize something [" << result << "]!";
-        nlp->start();
-        nlp->process(result);
-        nlp->end();
+        static std::string last_recognizer;
+        for (auto &flag : end_flag) {
+            if (flag == result) {
+                std::string recognize_result = last_recognizer + result;
+                last_recognizer = "";
+                BOOST_LOG_TRIVIAL(info) << "recognize something [" << recognize_result << "]!";
+                nlp->start();
+                nlp->process(recognize_result);
+                nlp->end();
+            }
+        }
+        last_recognizer = result;
     }, [](int reason) {
         BOOST_LOG_TRIVIAL(info) << "happen something [" << reason << "]!";
     });
 
-    VoiceRecord *voiceRecord = new VoiceRecord([&recognizer](char *data, size_t len, void *param) {
+    VoiceRecord *voiceRecord;
+
+    auto start_process = [&]() {
+        bool expected = false;
+        while(start_listing.compare_exchange_strong(expected, true)) {
+            BOOST_LOG_TRIVIAL(info) << "Start listing";
+            BOOST_LOG_TRIVIAL(info) << "Start cap " << voiceRecord->start();
+            BOOST_LOG_TRIVIAL(info) << "Start recognizer " << recognizer->start();
+        }
+    };
+
+    auto end_process = [&]() {
+        bool expected = true;
+        while(start_listing.compare_exchange_strong(expected, false)) {
+            BOOST_LOG_TRIVIAL(info) << "End listing";
+            BOOST_LOG_TRIVIAL(info) << "End recognizer " << recognizer->end();
+            BOOST_LOG_TRIVIAL(info) << "Stop cap " << voiceRecord->stop();
+        }
+    };
+
+    voiceRecord = new VoiceRecord([&recognizer](char *data, size_t len, void *param) {
         BOOST_LOG_TRIVIAL(info) << "listen something!";
         recognizer->listen(data, len);
+    }, [&end_process](){
+        end_process();
     }, 0);
 
     nlp->initialize();
@@ -86,23 +118,12 @@ int main(int, char *[]) {
                                     DEFAULT_FORMAT);;
 
     KeyEventHandler *keyEventHandler;
-    keyEventHandler = new KeyEventHandler("/dev/input/by-id/usb-Heng_Yu_Technology_Poker-event-kbd",
+    keyEventHandler = new KeyEventHandler("/dev/input/by-id/usb-Razer_Razer_BlackWidow_Chroma-event-kbd",
                                           [&](int key, bool press) {
                                               BOOST_LOG_TRIVIAL(info) << "Info event code : " << key
                                                                       << " " << press;
                                               if (press && key == KEY_HOME) {
-                                                  if (!start_listing) {
-                                                      start_listing = true;
-                                                      BOOST_LOG_TRIVIAL(info) << "Start listing";
-                                                      BOOST_LOG_TRIVIAL(info) << "Start cap "
-                                                                              << voiceRecord->start();
-                                                      BOOST_LOG_TRIVIAL(info) << "Start recognizer "
-                                                                              << recognizer->start();
-                                                      sleep(5);
-                                                      BOOST_LOG_TRIVIAL(info) << "End recognizer " << recognizer->end();
-                                                      BOOST_LOG_TRIVIAL(info) << "Stop cap " << voiceRecord->stop();
-                                                      start_listing = false;
-                                                  }
+                                                  start_process();
                                               } else if (!press && key == KEY_Q) {
                                                   global_exit = true;
                                               }

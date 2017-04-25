@@ -15,6 +15,10 @@
 #include <vector>
 #include <thread>
 
+extern "C" {
+#include <filter_audio.h>
+};
+
 enum {
     RECORD_ERR_BASE = 0,
     RECORD_ERR_GENERAL,
@@ -62,7 +66,8 @@ typedef struct _wave_format_ {
 
 class VoiceRecord {
 public:
-    VoiceRecord(std::function<void(char *, size_t, void *)> data_callback, void *user_para);
+    VoiceRecord(std::function<void(char *, size_t, void *)> data_callback,
+                std::function<void()> vad_callback, void *user_para);
 
     virtual ~VoiceRecord();
 
@@ -111,11 +116,13 @@ private:
     char *_audio_buf;
     std::thread *_thread_handle;
     std::function<void(char *data, size_t len, void *user_para)> _data_callback;
+    std::function<void()> _vad_callback;
     void *_user_parm;
     RECORD_STATE _state;
     snd_pcm_t *_handle;
     wave_format _fmt;
     std::vector<voice_record_dev> record_dev_list;
+    Filter_Audio *filteraudio;
 };
 
 

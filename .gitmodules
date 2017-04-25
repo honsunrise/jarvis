@@ -1,3 +1,6 @@
 [submodule "json"]
 	path = json
 	url = https://github.com/nlohmann/json.git
+[submodule "filter_audio"]
+	path = filter_audio
+	url = git@github.com:irungentoo/filter_audio.git

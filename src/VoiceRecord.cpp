@@ -6,8 +6,9 @@
 #include "VoiceRecord.h"
 
 VoiceRecord::VoiceRecord(std::function<void(char *, size_t, void *)> data_callback,
+                         std::function<void()> vad_callback,
                          void *user_parm)
-        : _data_callback(data_callback), _user_parm(user_parm), _handle(nullptr) {
+        : _data_callback(data_callback), _vad_callback(vad_callback), _user_parm(user_parm), _handle(nullptr) {
     _state = RECORD_STATE_CREATED;
     _prepare_device_list();
 }
@@ -38,6 +39,9 @@ int VoiceRecord::open(const voice_record_dev &dev, wave_format fmt) {
     if (err)
         goto fail;
 
+    /* Prepare filter_audio */
+    filteraudio = new_filter_audio(_fmt.samples_per_sec);
+    // enable_disable_filters(filteraudio, 0, 0, 0, 1);
     return 0;
 
     fail:
@@ -63,6 +67,9 @@ int VoiceRecord::close() {
         snd_pcm_close(_handle);
         _handle = nullptr;
     }
+
+    kill_filter_audio(filteraudio);
+
     _free_rec_buffer();
     _state = RECORD_STATE_CREATED;
     return 0;
@@ -163,8 +170,8 @@ int VoiceRecord::_set_hwparams() {
         err = snd_pcm_hw_params_get_buffer_time_max(params,
                                                     &buffer_time, 0);
         assert(err >= 0);
-        if (buffer_time > 500000)
-            buffer_time = 500000;
+        if (buffer_time > 400000)
+            buffer_time = 400000;
         period_time = buffer_time / 4;
     }
     err = snd_pcm_hw_params_set_period_time_near(_handle, params, &period_time, 0);
@@ -177,13 +184,27 @@ int VoiceRecord::_set_hwparams() {
         BOOST_LOG_TRIVIAL(error) << "set buffer time failed";
         return err;
     }
+
     err = snd_pcm_hw_params_get_period_size(params, &size, 0);
     if (err < 0) {
         BOOST_LOG_TRIVIAL(error) << "get period size fail";
         return err;
     }
+
     period_frames = size;
+
+    err = snd_pcm_hw_params_set_period_size_near(_handle, params, &period_frames, 0);
+    if (err < 0) {
+        BOOST_LOG_TRIVIAL(error) << "set period size fail";
+        return err;
+    }
+
     err = snd_pcm_hw_params_get_buffer_size(params, &size);
+    if (err < 0) {
+        BOOST_LOG_TRIVIAL(error) << "get buffer size fail";
+        return err;
+    }
+
     if (size == period_frames) {
         BOOST_LOG_TRIVIAL(error) << "Can't use period equal to buffer size " << size << "==" << period_frames;
         return -EINVAL;
@@ -293,9 +314,19 @@ void VoiceRecord::record_thread() {
     sigaddset(&mask, SIGTERM);
     pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 
+    int filter_result = 0;
+    int last_result = 0;
+    int novoice_count = 0;
+    int voice_count = 0;
+
+    frames = period_frames;
+    bytes = frames * bits_per_frame / 8;
+
+    char *temp_audio_buf = new char[bytes * 100];
+    size_t temp_audio_ptr = 0;
+    int interval = 1000 / (_fmt.samples_per_sec / frames);
+
     while (1) {
-        frames = period_frames;
-        bytes = frames * bits_per_frame / 8;
 
         if (pcm_read(frames) != frames) {
             return;
@@ -305,8 +336,34 @@ void VoiceRecord::record_thread() {
         if (_state == RECORD_STATE_CLOSING || _state == RECORD_STATE_STOPPING)
             break;
 
-        _data_callback(_audio_buf, bytes, _user_parm);
+        last_result = filter_result;
+
+        filter_result = filter_audio(filteraudio, (int16_t *) _audio_buf, (unsigned int) frames);
+
+        BOOST_LOG_TRIVIAL(info) << "Filter result " << filter_result;
+        if (!filter_result) {
+            novoice_count++;
+        } else {
+            memcpy(temp_audio_buf + temp_audio_ptr, _audio_buf, bytes);
+            temp_audio_ptr += bytes;
+            if (last_result) {
+                voice_count++;
+            }
+        }
+        if (interval * novoice_count >= 3 * 1000) {
+            novoice_count = 0;
+            std::thread([&](){_vad_callback();}).detach();
+        }
+        if (interval * voice_count > 400) {
+            novoice_count = 0;
+            voice_count = 0;
+            _data_callback(temp_audio_buf, temp_audio_ptr, _user_parm);
+            temp_audio_ptr = 0;
+        }
+        last_result = filter_result;
     }
+
+    delete[]temp_audio_buf;
 }
 
 static void free_name_desc(char **name_or_desc) {

@@ -15,12 +15,14 @@ endif()
 file(GLOB_RECURSE SOURCE_FILES ${PROJECT_SOURCE_DIR}/src/* ${PROJECT_SOURCE_DIR}/include/*)
 include_directories(include)
 include_directories(json/src)
+include_directories(filter_audio)
+link_directories(filter_audio)
 link_directories(/home/zhsyourai/sdks/xf_sdk/libs/x64)
 
 include_directories(src)
 
 add_executable(jarvis ${SOURCE_FILES})
-target_link_libraries(jarvis pthread dl rt asound msc)
+target_link_libraries(jarvis pthread dl rt asound msc filteraudio)
 
 if(Boost_FOUND)
     target_link_libraries(jarvis ${Boost_LIBRARIES})
