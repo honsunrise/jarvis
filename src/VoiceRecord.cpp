@@ -191,6 +191,7 @@ int VoiceRecord::_set_hwparams() {
         return err;
     }
 
+    BOOST_LOG_TRIVIAL(error) << "get period size " << size;
     period_frames = size;
 
     err = snd_pcm_hw_params_set_period_size_near(_handle, params, &period_frames, 0);
