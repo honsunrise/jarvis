@@ -114,8 +114,8 @@ int main(int, char *[]) {
 
     for (auto &dev : device_list) {
         BOOST_LOG_TRIVIAL(info) << "------------------------";
-        BOOST_LOG_TRIVIAL(info) << "Device name" << dev.name;
-        BOOST_LOG_TRIVIAL(info) << "Device desc" << dev.desc;
+        BOOST_LOG_TRIVIAL(info) << "Device name " << dev.name;
+        BOOST_LOG_TRIVIAL(info) << "Device desc " << dev.desc;
     }
     BOOST_LOG_TRIVIAL(info) << "------------------------";
 
