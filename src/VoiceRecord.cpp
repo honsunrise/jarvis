@@ -185,6 +185,12 @@ int VoiceRecord::_set_hwparams() {
         return err;
     }
 
+    err = snd_pcm_hw_params_set_period_size_integer(_handle, params);
+    if (err < 0) {
+        BOOST_LOG_TRIVIAL(error) << "set period size integer fail";
+        return err;
+    }
+
     err = snd_pcm_hw_params_get_period_size(params, &size, 0);
     if (err < 0) {
         BOOST_LOG_TRIVIAL(error) << "get period size fail";
@@ -205,6 +211,7 @@ int VoiceRecord::_set_hwparams() {
         BOOST_LOG_TRIVIAL(error) << "get buffer size fail";
         return err;
     }
+    BOOST_LOG_TRIVIAL(error) << "get buffer size " << size;
 
     if (size == period_frames) {
         BOOST_LOG_TRIVIAL(error) << "Can't use period equal to buffer size " << size << "==" << period_frames;
