@@ -112,6 +112,13 @@ int main(int, char *[]) {
 
     std::vector<voice_record_dev> &&device_list = voiceRecord->list();
 
+    for (auto &dev : device_list) {
+        BOOST_LOG_TRIVIAL(info) << "------------------------";
+        BOOST_LOG_TRIVIAL(info) << "Device name" << dev.name;
+        BOOST_LOG_TRIVIAL(info) << "Device desc" << dev.desc;
+    }
+    BOOST_LOG_TRIVIAL(info) << "------------------------";
+
     BOOST_LOG_TRIVIAL(info) << "Open cap "
                             << voiceRecord->open(
                                     device_list[0],
