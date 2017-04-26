@@ -107,11 +107,11 @@ private:
     unsigned int sample_rate;
     unsigned int sample_bit;
     unsigned int sample_cnt;
-    unsigned int buffer_time;
-    unsigned int period_time;
-    unsigned long buffer_frames;
-    unsigned long period_frames;
-    unsigned int bits_per_frame;
+    unsigned int buffer_time = 0;
+    unsigned int period_time = 0;
+    unsigned long buffer_frames = 0;
+    unsigned long period_frames = 0;
+    unsigned int bits_per_frame = 0;
 
     char *_audio_buf;
     std::thread *_thread_handle;
