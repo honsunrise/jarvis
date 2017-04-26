@@ -124,7 +124,7 @@ int main(int, char *[]) {
                                                                       << " " << press;
                                               if (press && key == KEY_HOME) {
                                                   start_process();
-                                              } else if (!press && key == KEY_Q) {
+                                              } else if (!press && key == KEY_ESC) {
                                                   global_exit = true;
                                               }
                                           }, [&](int code) {
@@ -148,5 +148,6 @@ int main(int, char *[]) {
     delete nlp;
     delete recognizer;
     delete voiceRecord;
+    BOOST_LOG_TRIVIAL(info) << "Jarvis exit.";
     return status;
 }
