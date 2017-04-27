@@ -51,8 +51,6 @@ int IflytekRecognizer::initialize() {
                     "accent = mandarin, sample_rate = 16000, "
                     "result_type = plain, result_encoding = utf8";
 
-    ep_stat = MSP_EP_LOOKING_FOR_SPEECH;
-    rec_stat = MSP_REC_STATUS_SUCCESS;
     audio_status = MSP_AUDIO_SAMPLE_FIRST;
 
     return 0;
@@ -76,8 +74,7 @@ int IflytekRecognizer::start() {
         BOOST_LOG_TRIVIAL(error) << "QISRSessionBegin failed! error code: " << errcode;
         return errcode;
     }
-    ep_stat = MSP_EP_LOOKING_FOR_SPEECH;
-    rec_stat = MSP_REC_STATUS_SUCCESS;
+
     audio_status = MSP_AUDIO_SAMPLE_FIRST;
     state = IFLYTEK_STATE_STARTED;
 
@@ -88,6 +85,8 @@ int IflytekRecognizer::start() {
 
 int IflytekRecognizer::listen(char *data, size_t len) {
     const char *rslt = NULL;
+    int ep_stat = MSP_EP_LOOKING_FOR_SPEECH;
+    int rec_stat = MSP_REC_STATUS_SUCCESS;
     int ret = 0;
     if (!data || !len)
         return 0;
@@ -106,16 +105,22 @@ int IflytekRecognizer::listen(char *data, size_t len) {
             _error_happen(ret);
             return ret;
         }
-        if (NULL != rslt && _on_result)
-            std::thread([&](){_on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);});
+        if (NULL != rslt && _on_result) {
+            char *str = new char[strlen(rslt + 1)];
+            strcpy(str, rslt);
+            std::thread([this, str, rec_stat](){_on_result(str, rec_stat == MSP_REC_STATUS_COMPLETE);}).detach();
+        }
     }
 
     if (MSP_EP_AFTER_SPEECH == ep_stat) {
         int errcode;
         while (rec_stat != MSP_REC_STATUS_COMPLETE) {
             rslt = QISRGetResult(session_id, &rec_stat, 0, &errcode);
-            if (rslt && _on_result)
-                std::thread([&](){_on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);});
+            if (rslt && _on_result) {
+                char *str = new char[strlen(rslt + 1)];
+                strcpy(str, rslt);
+                std::thread([this, str, rec_stat](){_on_result(str, rec_stat == MSP_REC_STATUS_COMPLETE);}).detach();
+            }
 
             usleep(500); /* for cpu occupy, should sleep here */
         }
@@ -135,6 +140,8 @@ int IflytekRecognizer::listen(char *data, size_t len) {
 int IflytekRecognizer::end() {
     int ret = 0;
     const char *rslt = NULL;
+    int ep_stat;
+    int rec_stat;
 
     if (state != IFLYTEK_STATE_STARTED) {
         BOOST_LOG_TRIVIAL(error) << "Not started or already stopped.";

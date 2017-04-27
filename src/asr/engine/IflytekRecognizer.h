@@ -44,8 +44,6 @@ public:
 private:
     void _error_happen(int errcode);
 
-    int ep_stat;
-    int rec_stat;
     int audio_status;
     const char *session_begin_params;
     const char* session_id;
