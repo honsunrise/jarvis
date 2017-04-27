@@ -35,7 +35,7 @@ typedef enum {
     RECORD_STATE_RECORDING,    /* Started	*/
 } RECORD_STATE;
 
-typedef struct _void_record_dev {
+typedef struct _voice_record_dev {
     int id;
     std::string name;
     std::string desc;

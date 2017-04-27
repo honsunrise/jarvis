@@ -13,8 +13,9 @@
 #include "nlp/engine/LPTProcessor.h"
 #include "KeyEventHandler.h"
 
-int main(int, char *[]) {
+int main(int argc, char *argv[] ) {
     int status = 0;
+    int index = 0;
     std::atomic_bool global_exit(false), start_listing(false);
     // create sink backend
     boost::shared_ptr<boost::log::sinks::text_ostream_backend> backend(
@@ -63,18 +64,18 @@ int main(int, char *[]) {
     static std::string end_flag[] = {"。", "？", "！"};
 
     SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp](const char *result, char is_last) {
-        static std::string last_recognizer;
+        static std::string last_recognizer = "贾维斯";
         for (auto &flag : end_flag) {
             if (flag == result) {
                 std::string recognize_result = last_recognizer + result;
-                last_recognizer = "";
+                last_recognizer = "贾维斯";
                 BOOST_LOG_TRIVIAL(info) << "recognize something [" << recognize_result << "]!";
                 nlp->start();
                 nlp->process(recognize_result);
                 nlp->end();
             }
         }
-        last_recognizer = result;
+        last_recognizer += result;
     }, [](int reason) {
         BOOST_LOG_TRIVIAL(info) << "happen something [" << reason << "]!";
     });
@@ -83,7 +84,7 @@ int main(int, char *[]) {
 
     auto start_process = [&]() {
         bool expected = false;
-        while(start_listing.compare_exchange_strong(expected, true)) {
+        while (start_listing.compare_exchange_strong(expected, true)) {
             BOOST_LOG_TRIVIAL(info) << "Start listing";
             BOOST_LOG_TRIVIAL(info) << "Start cap " << voiceRecord->start();
             BOOST_LOG_TRIVIAL(info) << "Start recognizer " << recognizer->start();
@@ -92,7 +93,7 @@ int main(int, char *[]) {
 
     auto end_process = [&]() {
         bool expected = true;
-        while(start_listing.compare_exchange_strong(expected, false)) {
+        while (start_listing.compare_exchange_strong(expected, false)) {
             BOOST_LOG_TRIVIAL(info) << "End listing";
             BOOST_LOG_TRIVIAL(info) << "End recognizer " << recognizer->end();
             BOOST_LOG_TRIVIAL(info) << "Stop cap " << voiceRecord->stop();
@@ -102,7 +103,7 @@ int main(int, char *[]) {
     voiceRecord = new VoiceRecord([&recognizer](char *data, size_t len, void *param) {
         BOOST_LOG_TRIVIAL(info) << "listen something!";
         recognizer->listen(data, len);
-    }, [&end_process](){
+    }, [&end_process]() {
         end_process();
     }, 0);
 
@@ -114,7 +115,7 @@ int main(int, char *[]) {
     voice_record_dev will_open;
 
     for (auto &dev : device_list) {
-        if(dev.name == "default") {
+        if (dev.name == "default") {
             will_open = dev;
         }
         BOOST_LOG_TRIVIAL(info) << "------------------------";
@@ -127,21 +128,33 @@ int main(int, char *[]) {
                             << voiceRecord->open(will_open, DEFAULT_FORMAT);
 
     KeyEventHandler *keyEventHandler;
-    keyEventHandler = new KeyEventHandler("/dev/input/by-id/usb-Razer_Razer_BlackWidow_Chroma-event-kbd",
-                                          [&](int key, bool press) {
-                                              BOOST_LOG_TRIVIAL(info) << "Info event code : " << key
-                                                                      << " " << press;
-                                              if (press && key == KEY_HOME) {
-                                                  start_process();
-                                              } else if (!press && key == KEY_ESC) {
-                                                  global_exit = true;
-                                              }
-                                          }, [&](int code) {
+    keyEventHandler = new KeyEventHandler(
+            [&](int key, bool press) {
+                BOOST_LOG_TRIVIAL(info) << "Info event code : " << key
+                                        << " " << press;
+                if (press && key == KEY_HOME) {
+                    start_process();
+                } else if (!press && key == KEY_ESC) {
+                    global_exit = true;
+                }
+            }, [&](int code) {
                 BOOST_LOG_TRIVIAL(error) << "Key event handler error : " << code;
                 global_exit = true;
             });
 
-    if ((status = keyEventHandler->start()) < 0) {
+    std::vector<input_dev> &&input_device_list = keyEventHandler->list();
+    BOOST_LOG_TRIVIAL(info) << "------input devicelist------";
+    for (auto &dev : input_device_list) {
+        BOOST_LOG_TRIVIAL(info) << dev.id << ". " << dev.name;
+    }
+    BOOST_LOG_TRIVIAL(info) << "----------------------------";
+
+    if(argc < 2) {
+        goto exit;
+    }
+
+    index = atoi(argv[1]);
+    if ((status = keyEventHandler->start(input_device_list[index].path)) < 0) {
         BOOST_LOG_TRIVIAL(error) << "Key event handler register error : " << status;
         goto exit;
     }

@@ -12,21 +12,36 @@
 #include <future>
 #include <linux/input.h>
 
+#define test_bit(bit, mask) (mask[(bit)/8] & (1 << ((bit)%8)))
+
+typedef struct _input_dev {
+    int id;
+    std::string name;
+    std::string path;
+    std::string version;
+    unsigned char mask[EV_MAX / 8 + 1]; /* RATS: Use ok */
+} input_dev;
+
 class KeyEventHandler {
 public:
-    KeyEventHandler(std::string device, std::function<void(int key, bool press)> callback,
+    KeyEventHandler(std::function<void(int key, bool press)> callback,
     std::function<void(int)> error_callback);
 
     virtual ~KeyEventHandler();
 
-    int start();
+    int start(std::string device);
+
+    std::vector<input_dev> list();
 
 private:
+    void _prepare_device_list();
+
     std::function<void(int key, bool press)> _callback;
     std::function<void(int)> _error_callback;
     std::string _device;
     std::future<int> _future;
     std::atomic_bool _exit;
+    std::vector<input_dev> _dev_list;
     int fd;
 };
 

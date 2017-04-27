@@ -11,10 +11,10 @@
 #include "KeyEventHandler.h"
 
 
-KeyEventHandler::KeyEventHandler(std::string device, std::function<void(int key, bool press)> call_back,
+KeyEventHandler::KeyEventHandler(std::function<void(int key, bool press)> call_back,
                                  std::function<void(int)> error_callback)
-        : _callback(call_back), _device(device), _exit(false), _error_callback(error_callback) {
-
+        : _callback(call_back), _device(""), _exit(false), _error_callback(error_callback) {
+    _prepare_device_list();
 }
 
 KeyEventHandler::~KeyEventHandler() {
@@ -23,7 +23,8 @@ KeyEventHandler::~KeyEventHandler() {
         _future.wait();
 }
 
-int KeyEventHandler::start() {
+int KeyEventHandler::start(std::string device) {
+    _device = device;
     char name[256] = "Unknown";
 
     if ((getuid()) != 0)
@@ -63,7 +64,7 @@ int KeyEventHandler::start() {
                 /* We consider only key presses and auto repeats. */
                 if (ev.type != EV_KEY || (ev.value != 0 && ev.value != 1 && ev.value != 2))
                     continue;
-                std::thread([this, ev](){_callback(ev.code, ev.value > 0);}).detach();
+                std::thread([this, ev]() { _callback(ev.code, ev.value > 0); }).detach();
             } else if (n == (ssize_t) 0) {
                 status = ENOENT;
                 break;
@@ -73,7 +74,7 @@ int KeyEventHandler::start() {
             }
         }
         if (!_exit)
-            std::thread([this, status](){_error_callback(status);}).detach();
+            std::thread([this, status]() { _error_callback(status); }).detach();
         return -status;
     };
 
@@ -82,5 +83,32 @@ int KeyEventHandler::start() {
     std::thread thread(std::move(task));
     thread.detach();
     return 0;
+}
+
+void KeyEventHandler::_prepare_device_list() {
+    int version;
+    char name[256];           /* RATS: Use ok, but could be better */
+    char buf[256] = {0,};  /* RATS: Use ok */
+    unsigned char mask[EV_MAX / 8 + 1]; /* RATS: Use ok */
+    for (int i = 0; i < 32; i++) {
+        sprintf(name, "/dev/input/event%d", i);
+        if ((fd = open(name, O_RDONLY, 0)) >= 0) {
+            input_dev dev;
+            ioctl(fd, EVIOCGVERSION, &version);
+            ioctl(fd, EVIOCGNAME(sizeof(buf)), buf);
+            ioctl(fd, EVIOCGBIT(0, sizeof(dev.mask)), dev.mask);
+            dev.name = buf;
+            dev.path = name;
+            dev.id = i;
+            dev.version = version;
+            close(fd);
+            _dev_list.push_back(dev);
+        }
+    }
+
+}
+
+std::vector<input_dev> KeyEventHandler::list() {
+    return _dev_list;
 }
 
