@@ -35,7 +35,7 @@ int IflytekTTS::uninitialize() {
 
 int IflytekTTS::start() {
     std::stringstream session_begin_params;
-    session_begin_params << "voice_name = xiaoqian, text_encoding = utf8, sample_rate = 16000, rdn = 2";
+    session_begin_params << "voice_name = babyxu, text_encoding = utf8, sample_rate = 16000, rdn = 2";
     session_begin_params << ", pitch = " << pitch;
     session_begin_params << ", speed = " << speed;
     session_begin_params << ", volume = " << volume;
@@ -64,9 +64,10 @@ int IflytekTTS::process(std::string text) {
         const char *data = (const char *) QTTSAudioGet(sessionID, &audio_len, &synth_status, &ret);
         if (MSP_SUCCESS != ret)
             break;
-        if (MSP_TTS_FLAG_DATA_END == synth_status)
-            break;
         _on_result(data, audio_len);
+        if (MSP_TTS_FLAG_DATA_END == synth_status) {
+            break;
+        }
         usleep(100 * 1000);
     }
     if (MSP_SUCCESS != ret) {
