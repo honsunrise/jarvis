@@ -8,6 +8,7 @@
 #include <msp_errors.h>
 #include <boost/log/trivial.hpp>
 #include <msp_cmn.h>
+#include <thread>
 #include "IflytekRecognizer.h"
 
 IflytekRecognizer::IflytekRecognizer(const std::function<void(const char *, bool)> &on_result,
@@ -106,7 +107,7 @@ int IflytekRecognizer::listen(char *data, size_t len) {
             return ret;
         }
         if (NULL != rslt && _on_result)
-            _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);
+            std::thread([&](){_on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);});
     }
 
     if (MSP_EP_AFTER_SPEECH == ep_stat) {
@@ -114,7 +115,7 @@ int IflytekRecognizer::listen(char *data, size_t len) {
         while (rec_stat != MSP_REC_STATUS_COMPLETE) {
             rslt = QISRGetResult(session_id, &rec_stat, 0, &errcode);
             if (rslt && _on_result)
-                _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);
+                std::thread([&](){_on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);});
 
             usleep(500); /* for cpu occupy, should sleep here */
         }
