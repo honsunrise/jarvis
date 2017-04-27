@@ -111,8 +111,12 @@ int main(int, char *[]) {
     recognizer->initialize();
 
     std::vector<voice_record_dev> &&device_list = voiceRecord->list();
+    voice_record_dev will_open;
 
     for (auto &dev : device_list) {
+        if(dev.name == "default") {
+            will_open = dev;
+        }
         BOOST_LOG_TRIVIAL(info) << "------------------------";
         BOOST_LOG_TRIVIAL(info) << "Device name " << dev.name;
         BOOST_LOG_TRIVIAL(info) << "Device desc " << dev.desc;
@@ -120,9 +124,7 @@ int main(int, char *[]) {
     BOOST_LOG_TRIVIAL(info) << "------------------------";
 
     BOOST_LOG_TRIVIAL(info) << "Open cap "
-                            << voiceRecord->open(
-                                    device_list[0],
-                                    DEFAULT_FORMAT);;
+                            << voiceRecord->open(will_open, DEFAULT_FORMAT);
 
     KeyEventHandler *keyEventHandler;
     keyEventHandler = new KeyEventHandler("/dev/input/by-id/usb-Razer_Razer_BlackWidow_Chroma-event-kbd",
