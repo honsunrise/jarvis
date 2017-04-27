@@ -328,7 +328,7 @@ void VoiceRecord::record_thread() {
 
     char *temp_audio_buf = new char[bytes * 100];
     size_t temp_audio_ptr = 0;
-    int interval = 1000 / (_fmt.samples_per_sec / frames);
+    int interval = 1000 * frames / _fmt.samples_per_sec;
 
     while (1) {
 
@@ -364,7 +364,6 @@ void VoiceRecord::record_thread() {
             _data_callback(temp_audio_buf, temp_audio_ptr, _user_parm);
             temp_audio_ptr = 0;
         }
-        last_result = filter_result;
     }
 
     delete[]temp_audio_buf;
