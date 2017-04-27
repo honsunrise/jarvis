@@ -80,7 +80,7 @@ int main(int argc, char *argv[] ) {
         BOOST_LOG_TRIVIAL(info) << "happen something [" << reason << "]!";
     });
 
-    VoiceRecord *voiceRecord;
+    Voice::VoiceRecord *voiceRecord;
 
     auto start_process = [&]() {
         bool expected = false;
@@ -100,7 +100,7 @@ int main(int argc, char *argv[] ) {
         }
     };
 
-    voiceRecord = new VoiceRecord([&recognizer](char *data, size_t len, void *param) {
+    voiceRecord = new Voice::VoiceRecord([&recognizer](char *data, size_t len, void *param) {
         BOOST_LOG_TRIVIAL(info) << "listen something!";
         recognizer->listen(data, len);
     }, [&end_process]() {
@@ -111,8 +111,8 @@ int main(int argc, char *argv[] ) {
 
     recognizer->initialize();
 
-    std::vector<voice_record_dev> &&device_list = voiceRecord->list();
-    voice_record_dev will_open;
+    std::vector<Voice::voice_dev> &&device_list = Voice::list_capture_devices();
+    Voice::voice_dev will_open;
 
     for (auto &dev : device_list) {
         if (dev.name == "default") {

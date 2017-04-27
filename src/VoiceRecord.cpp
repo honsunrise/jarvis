@@ -5,19 +5,18 @@
 #include <boost/log/trivial.hpp>
 #include "VoiceRecord.h"
 
-VoiceRecord::VoiceRecord(std::function<void(char *, size_t, void *)> data_callback,
+Voice::VoiceRecord::VoiceRecord(std::function<void(char *, size_t, void *)> data_callback,
                          std::function<void()> vad_callback,
                          void *user_parm)
         : _data_callback(data_callback), _vad_callback(vad_callback), _user_parm(user_parm), _handle(nullptr) {
     _state = RECORD_STATE_CREATED;
-    _prepare_device_list();
 }
 
-VoiceRecord::~VoiceRecord() {
+Voice::VoiceRecord::~VoiceRecord() {
     _state = RECORD_STATE_CLOSING;
 }
 
-int VoiceRecord::open(const voice_record_dev &dev, wave_format fmt) {
+int Voice::VoiceRecord::open(const voice_dev &dev, wave_format fmt) {
     if (_state != RECORD_STATE_CREATED) {
         return -1;
     }
@@ -53,7 +52,7 @@ int VoiceRecord::open(const voice_record_dev &dev, wave_format fmt) {
     return err;
 }
 
-int VoiceRecord::close() {
+int Voice::VoiceRecord::close() {
     if (!(_state == RECORD_STATE_READY || _state == RECORD_STATE_RECORDING || _state == RECORD_STATE_STOPPING))
         return -RECORD_ERR_NOT_READY;
 
@@ -63,7 +62,6 @@ int VoiceRecord::close() {
     _state = RECORD_STATE_CLOSING;
 
     if (_handle) {
-        snd_pcm_drain(_handle);
         snd_pcm_close(_handle);
         _handle = nullptr;
     }
@@ -75,7 +73,7 @@ int VoiceRecord::close() {
     return 0;
 }
 
-int VoiceRecord::start() {
+int Voice::VoiceRecord::start() {
     int ret;
     if (_state != RECORD_STATE_READY)
         return -RECORD_ERR_NOT_READY;
@@ -87,11 +85,11 @@ int VoiceRecord::start() {
     if (ret == 0)
         _state = RECORD_STATE_RECORDING;
 
-    _thread_handle = new std::thread(std::bind(&VoiceRecord::record_thread, this));
+    _thread_handle = new std::thread(std::bind(&Voice::VoiceRecord::record_thread, this));
     return ret;
 }
 
-int VoiceRecord::stop() {
+int Voice::VoiceRecord::stop() {
     int ret;
     if (_state != RECORD_STATE_RECORDING)
         return -RECORD_ERR_INVAL;
@@ -107,21 +105,11 @@ int VoiceRecord::stop() {
     return ret;
 }
 
-RECORD_STATE VoiceRecord::state() {
+Voice::VoiceRecord::RECORD_STATE Voice::VoiceRecord::state() {
     return _state;
 }
 
-int VoiceRecord::format_ms_to_alsa(const wave_format *fmt, snd_pcm_format_t *format) {
-    snd_pcm_format_t tmp;
-    tmp = snd_pcm_build_linear_format(fmt->bits_per_sample, fmt->bits_per_sample,
-                                      fmt->bits_per_sample == 8 ? 1 : 0, 0);
-    if (tmp == SND_PCM_FORMAT_UNKNOWN)
-        return -EINVAL;
-    *format = tmp;
-    return 0;
-}
-
-int VoiceRecord::_set_hwparams() {
+int Voice::VoiceRecord::_set_hwparams() {
     snd_pcm_hw_params_t *params;
     int err;
     unsigned int rate;
@@ -225,7 +213,7 @@ int VoiceRecord::_set_hwparams() {
     return 0;
 }
 
-int VoiceRecord::_set_swparams() {
+int Voice::VoiceRecord::_set_swparams() {
     int err;
     snd_pcm_sw_params_t *swparams;
     /* sw para */
@@ -258,7 +246,7 @@ int VoiceRecord::_set_swparams() {
     return 0;
 }
 
-int VoiceRecord::_prepare_rec_buffer() {
+int Voice::VoiceRecord::_prepare_rec_buffer() {
     size_t sz = (period_frames * bits_per_frame / 8);
     _audio_buf = (char *) malloc(sz);
     if (!_audio_buf)
@@ -266,14 +254,14 @@ int VoiceRecord::_prepare_rec_buffer() {
     return 0;
 }
 
-void VoiceRecord::_free_rec_buffer() {
+void Voice::VoiceRecord::_free_rec_buffer() {
     if (_audio_buf) {
         free(_audio_buf);
         _audio_buf = nullptr;
     }
 }
 
-int VoiceRecord::setup() {
+int Voice::VoiceRecord::setup() {
     int err = 0;
     err = _set_hwparams();
     if (err < 0)
@@ -284,7 +272,7 @@ int VoiceRecord::setup() {
     return err;
 }
 
-ssize_t VoiceRecord::pcm_read(size_t r_count) {
+ssize_t Voice::VoiceRecord::pcm_read(size_t r_count) {
     snd_pcm_sframes_t frames;
     size_t count = r_count;
     char *data;
@@ -308,7 +296,7 @@ ssize_t VoiceRecord::pcm_read(size_t r_count) {
     return r_count;
 }
 
-void VoiceRecord::record_thread() {
+void Voice::VoiceRecord::record_thread() {
     BOOST_LOG_TRIVIAL(info) << "record_thread start!";
     size_t frames, bytes;
     sigset_t mask, old_mask;
@@ -367,113 +355,4 @@ void VoiceRecord::record_thread() {
     }
 
     delete[]temp_audio_buf;
-}
-
-static void free_name_desc(char **name_or_desc) {
-    if (nullptr == name_or_desc)
-        return;
-    while (*name_or_desc != nullptr) {
-        free(*name_or_desc);
-        *name_or_desc = nullptr;
-        name_or_desc++;
-    }
-}
-
-size_t VoiceRecord::list_pcm(snd_pcm_stream_t stream, char ***name_out, char ***desc_out) {
-    void **hints, **n;
-    char **names, **descr;
-    char *io;
-    const char *filter;
-    size_t cnt = 0;
-    int i = 0;
-    *name_out = nullptr;
-    *desc_out = nullptr;
-
-    if (snd_device_name_hint(-1, "pcm", &hints) < 0)
-        return 0;
-    n = hints;
-
-    filter = stream == SND_PCM_STREAM_CAPTURE ? "Input" : "Output";
-
-    while (*n != nullptr) {
-        char *name;
-        io = snd_device_name_get_hint(*n, "IOID");
-        name = snd_device_name_get_hint(*n, "NAME");
-        if (name && (io == nullptr || strcmp(io, filter) == 0))
-            cnt++;
-        if (io != nullptr)
-            free(io);
-        if (name != nullptr)
-            free(name);
-        n++;
-    }
-
-    if (!cnt) {
-        goto fail;
-    }
-
-    *name_out = (char **) malloc((1 + cnt) * sizeof(char *));
-    if (*name_out == nullptr)
-        goto fail;
-    *desc_out = (char **) malloc((1 + cnt) * sizeof(char *));
-    if (*desc_out == nullptr)
-        goto fail;
-
-    /* the last one is a flag, nullptr */
-    names = *name_out;
-    descr = *desc_out;
-    names[cnt] = nullptr;
-    descr[cnt] = nullptr;
-
-    n = hints;
-    while (*n != nullptr && i < cnt) {
-        *names = snd_device_name_get_hint(*n, "NAME");
-        *descr = snd_device_name_get_hint(*n, "DESC");
-        io = snd_device_name_get_hint(*n, "IOID");
-        if (io != nullptr && strcmp(io, filter) != 0) {
-            if (*names) free(*names);
-            if (*descr) free(*descr);
-        } else {
-            if (*names == nullptr) {
-                *names = (char *) malloc(4);
-                memset(*names, 0, 4);
-            }
-            if (*descr == nullptr) {
-                *descr = (char *) malloc(4);
-                memset(*descr, 0, 4);
-            }
-            names++;
-            descr++;
-            i++;
-        }
-        if (io != nullptr)
-            free(io);
-        n++;
-    }
-    snd_device_name_free_hint(hints);
-    return cnt;
-    fail:
-    free_name_desc(*name_out);
-    free_name_desc(*desc_out);
-    snd_device_name_free_hint(hints);
-    return 0;
-}
-
-std::vector<voice_record_dev> VoiceRecord::list() {
-    return record_dev_list;
-}
-
-void VoiceRecord::_prepare_device_list() {
-    char **name_array;
-    char **desc_array;
-    size_t count = list_pcm(SND_PCM_STREAM_CAPTURE, &name_array, &desc_array);
-    for (int i = 0; i < count; ++i) {
-        voice_record_dev _dev;
-        _dev.name = name_array[i];
-        _dev.desc = desc_array[i];
-        _dev.id = i;
-        record_dev_list.push_back(_dev);
-    }
-    free_name_desc(name_array);
-    free_name_desc(desc_array);
 }
