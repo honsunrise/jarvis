@@ -151,7 +151,6 @@ int main(int argc, char *argv[]) {
     };
 
     voiceRecord = new Voice::VoiceRecord([&recognizer](char *data, size_t len, void *param) {
-        BOOST_LOG_TRIVIAL(info) << "listen something!";
         recognizer->listen(data, len);
     }, [&end_process]() {
         end_process();

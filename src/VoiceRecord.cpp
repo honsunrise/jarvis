@@ -321,7 +321,7 @@ void Voice::VoiceRecord::record_thread() {
     while (1) {
 
         if (pcm_read(frames) != frames) {
-            return;
+            break;
         }
 
         /* closing, exit the thread */
@@ -342,7 +342,7 @@ void Voice::VoiceRecord::record_thread() {
                 voice_count++;
             }
         }
-        if (interval * novoice_count >= 3 * 1000) {
+        if (interval * novoice_count >= 2 * 1000) {
             novoice_count = 0;
             std::thread([&](){_vad_callback();}).detach();
         }

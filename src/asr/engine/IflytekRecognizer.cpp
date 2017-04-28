@@ -96,7 +96,7 @@ int IflytekRecognizer::listen(char *data, size_t len) {
             return ret;
         }
         if (NULL != rslt && _on_result) {
-            char *str = new char[strlen(rslt + 1)];
+            char *str = new char[strlen(rslt) + 1];
             strcpy(str, rslt);
             std::thread([this, str, rec_stat](){_on_result(str, rec_stat == MSP_REC_STATUS_COMPLETE);}).detach();
         }
@@ -107,7 +107,7 @@ int IflytekRecognizer::listen(char *data, size_t len) {
         while (rec_stat != MSP_REC_STATUS_COMPLETE) {
             rslt = QISRGetResult(session_id, &rec_stat, 0, &errcode);
             if (rslt && _on_result) {
-                char *str = new char[strlen(rslt + 1)];
+                char *str = new char[strlen(rslt) + 1];
                 strcpy(str, rslt);
                 std::thread([this, str, rec_stat](){_on_result(str, rec_stat == MSP_REC_STATUS_COMPLETE);}).detach();
             }
@@ -154,7 +154,7 @@ int IflytekRecognizer::end() {
             return ret;
         }
         if (rslt && _on_result) {
-            char *str = new char[strlen(rslt + 1)];
+            char *str = new char[strlen(rslt) + 1];
             strcpy(str, rslt);
             std::thread([this, str, rec_stat](){_on_result(str, rec_stat == MSP_REC_STATUS_COMPLETE);}).detach();
         }
