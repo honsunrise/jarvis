@@ -332,7 +332,6 @@ void Voice::VoiceRecord::record_thread() {
 
         filter_result = filter_audio(filteraudio, (int16_t *) _audio_buf, (unsigned int) frames);
 
-        BOOST_LOG_TRIVIAL(info) << "Filter result " << filter_result;
         if (!filter_result) {
             novoice_count++;
         } else {
@@ -342,11 +341,11 @@ void Voice::VoiceRecord::record_thread() {
                 voice_count++;
             }
         }
-        if (interval * novoice_count >= 2 * 1000) {
+        if (interval * novoice_count >= 1.0 * 1000) {
             novoice_count = 0;
             std::thread([&](){_vad_callback();}).detach();
         }
-        if (interval * voice_count > 400) {
+        if (interval * voice_count > 600) {
             novoice_count = 0;
             voice_count = 0;
             _data_callback(temp_audio_buf, temp_audio_ptr, _user_parm);

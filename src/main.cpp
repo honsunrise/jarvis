@@ -112,13 +112,14 @@ int main(int argc, char *argv[]) {
                 std::string recognize_result = last_recognizer + result;
                 last_recognizer = "";
                 BOOST_LOG_TRIVIAL(info) << "recognize something [" << recognize_result << "]!";
-                nlp->start();
-                nlp->process("贾维斯" + recognize_result);
-                nlp->end();
 
                 tuling->start();
                 tuling->process("贾维斯" + recognize_result);
                 tuling->end();
+
+                nlp->start();
+                nlp->process("贾维斯" + recognize_result);
+                nlp->end();
             }
         }
         if (!skip) {
