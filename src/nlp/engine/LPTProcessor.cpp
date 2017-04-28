@@ -42,6 +42,7 @@ int LPTProcessor::process(std::string data) {
     ss << "&api_key=" << api_key;
     ss << "&text=" << data;
     AsyncHttpClient c(*io_service, "ltpapi.voicecloud.cn", AsyncHttpClient::POST, "/analysis/", ss.str(),
+                      AsyncHttpClient::URLENCODE,
                       [&](std::string error) {
                           _on_error(-1);
                       },

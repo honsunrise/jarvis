@@ -8,13 +8,14 @@
 #include <boost/log/support/date_time.hpp>
 #include <boost/core/null_deleter.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
+#include "engine.h"
 #include "VoiceRecord.h"
 #include "asr/engine/IflytekRecognizer.h"
 #include "nlp/engine/LPTProcessor.h"
 #include "tts/engine/IflytekTTS.h"
 #include "KeyEventHandler.h"
 #include "VoicePlayer.h"
-#include "engine.h"
+#include "chat/engine/TulingOTT.h"
 
 int main(int argc, char *argv[] ) {
     int status = 0;
@@ -86,6 +87,14 @@ int main(int argc, char *argv[] ) {
             }, [](int code) {
             });
 
+    chat *tuling = new TulingOTT([&tts](std::string text) {
+        tts->start();
+        tts->process(text);
+        tts->end();
+    }, [](int code) {
+
+    });
+
     NLP *nlp = new LPTProcessor([](std::vector<CONLL> conll) {
         BOOST_LOG_TRIVIAL(info) << "NLP [" << conll[1].content << "]!";
     }, [](int code) {
@@ -94,19 +103,20 @@ int main(int argc, char *argv[] ) {
 
     static std::string end_flag[] = {"。", "？", "！"};
 
-    SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp, &tts](const char *result, char is_last) {
-        static std::string last_recognizer = "贾维斯";
+    SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp, &tuling](const char *result, char is_last) {
+        static std::string last_recognizer = "";
         for (auto &flag : end_flag) {
             if (flag == result) {
                 std::string recognize_result = last_recognizer + result;
-                last_recognizer = "贾维斯";
+                last_recognizer = "";
                 BOOST_LOG_TRIVIAL(info) << "recognize something [" << recognize_result << "]!";
                 nlp->start();
-                nlp->process(recognize_result);
+                nlp->process("贾维斯" + recognize_result);
                 nlp->end();
-                tts->start();
-                tts->process(recognize_result);
-                tts->end();
+
+                tuling->start();
+                tuling->process("贾维斯" + recognize_result);
+                tuling->end();
             }
         }
         last_recognizer += result;
@@ -140,6 +150,8 @@ int main(int argc, char *argv[] ) {
     }, [&end_process]() {
         end_process();
     }, 0);
+
+    tuling->initialize();
 
     tts->initialize();
 
@@ -192,12 +204,14 @@ int main(int argc, char *argv[] ) {
         BOOST_LOG_TRIVIAL(error) << "Key event handler register error : " << status;
         goto exit;
     }
+
     while (!global_exit) {
         BOOST_LOG_TRIVIAL(info) << "everything is ok!";
         sleep(5);
     }
     exit:
     delete keyEventHandler;
+    tuling->uninitialize();
     recognizer->uninitialize();
     nlp->uninitialize();
     tts->uninitialize();

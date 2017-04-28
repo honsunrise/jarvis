@@ -26,9 +26,15 @@ public:
         GET,
         POST
     };
+
+    enum CONTENT_TYPE {
+        JSON,
+        URLENCODE
+    };
+
     AsyncHttpClient(boost::asio::io_service &io_service,
                     const std::string &server, REQUEST_TYPE type, const std::string &path, const std::string data,
-                    std::function<void(std::string)> on_error,
+                    CONTENT_TYPE content_type, std::function<void(std::string)> on_error,
                     std::function<void(unsigned int, std::vector<std::string>, std::string)> on_result)
             : resolver_(io_service),
               socket_(io_service),
@@ -40,7 +46,7 @@ public:
         // server will close the socket after transmitting the response. This will
         // allow us to treat all data up until the EOF as the content.
         std::ostream request_stream(&request_);
-        if(type == GET) {
+        if (type == GET) {
             request_stream << "GET " << path << " HTTP/1.0\r\n";
             request_stream << "Host: " << server << "\r\n";
         } else {
@@ -50,12 +56,14 @@ public:
 
         request_stream << "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\n";
         request_stream << "Cache-Control: max-age=0\r\n";
-        request_stream << "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36\r\n";
+        request_stream
+                << "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36\r\n";
         request_stream << "Cache-Control: max-age=0\r\n";
         request_stream << "Content-Length: " << data.length() << "\r\n";
-        request_stream << "Content-Type: application/x-www-form-urlencoded\r\n";
+        request_stream << "Content-Type: " << (content_type == JSON ? "text/json; charset=UTF-8"
+                                                                    : "application/x-www-form-urlencoded") << "\r\n";
         request_stream << "Connection: keep-alive\r\n\r\n";
-        if(type == POST)
+        if (type == POST)
             request_stream << data;
 
 
