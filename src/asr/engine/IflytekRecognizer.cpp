@@ -10,7 +10,7 @@
 #include <thread>
 #include "IflytekRecognizer.h"
 
-IflytekRecognizer::IflytekRecognizer(const std::function<void(const char *, bool)> &on_result,
+IflytekRecognizer::IflytekRecognizer(const std::function<void(char *, bool)> &on_result,
                                      const std::function<void()> &on_speech_begin,
                                      const std::function<void()> &on_speech_end,
                                      const std::function<void(int)> &on_error) : SpeechRecognizer(on_result,
@@ -19,7 +19,7 @@ IflytekRecognizer::IflytekRecognizer(const std::function<void(const char *, bool
                                                                                                   on_error) {
 }
 
-IflytekRecognizer::IflytekRecognizer(const std::function<void(const char *, bool)> &on_result,
+IflytekRecognizer::IflytekRecognizer(const std::function<void(char *, bool)> &on_result,
                                      const std::function<void(int)> &on_error) : SpeechRecognizer(on_result,
                                                                                                   on_error) {
 
@@ -153,8 +153,11 @@ int IflytekRecognizer::end() {
             _error_happen(ret);
             return ret;
         }
-        if (NULL != rslt && _on_result)
-            _on_result(rslt, rec_stat == MSP_REC_STATUS_COMPLETE);
+        if (rslt && _on_result) {
+            char *str = new char[strlen(rslt + 1)];
+            strcpy(str, rslt);
+            std::thread([this, str, rec_stat](){_on_result(str, rec_stat == MSP_REC_STATUS_COMPLETE);}).detach();
+        }
         usleep(500);
     }
 

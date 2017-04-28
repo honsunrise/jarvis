@@ -17,7 +17,7 @@
 #include "VoicePlayer.h"
 #include "chat/engine/TulingOTT.h"
 
-int main(int argc, char *argv[] ) {
+int main(int argc, char *argv[]) {
     int status = 0;
     int index = 0;
     std::atomic_bool global_exit(false), start_listing(false);
@@ -82,7 +82,7 @@ int main(int argc, char *argv[] ) {
 
     TTS *tts = new IflytekTTS(
             [&](const char *data, unsigned int len) {
-                if(data != nullptr)
+                if (data != nullptr)
                     voicePlayer->play(data, len);
             }, [](int code) {
             });
@@ -103,10 +103,12 @@ int main(int argc, char *argv[] ) {
 
     static std::string end_flag[] = {"。", "？", "！"};
 
-    SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp, &tuling](const char *result, char is_last) {
+    SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp, &tuling](char *result, char is_last) {
         static std::string last_recognizer = "";
+        bool skip = false;
         for (auto &flag : end_flag) {
             if (flag == result) {
+                skip = true;
                 std::string recognize_result = last_recognizer + result;
                 last_recognizer = "";
                 BOOST_LOG_TRIVIAL(info) << "recognize something [" << recognize_result << "]!";
@@ -119,7 +121,11 @@ int main(int argc, char *argv[] ) {
                 tuling->end();
             }
         }
-        last_recognizer += result;
+        if (!skip) {
+            last_recognizer += result;
+            skip = true;
+        }
+        delete[]result;
     }, [](int reason) {
         BOOST_LOG_TRIVIAL(info) << "happen something [" << reason << "]!";
     });
@@ -195,7 +201,7 @@ int main(int argc, char *argv[] ) {
     }
     BOOST_LOG_TRIVIAL(info) << "----------------------------";
 
-    if(argc < 2) {
+    if (argc < 2) {
         goto exit;
     }
 
