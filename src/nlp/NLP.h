@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <functional>
 #include <vector>
+#include "../engine.h"
 
 typedef struct _CONLL_PREDICATE_ {
     int id;
@@ -26,14 +27,6 @@ typedef struct _CONLL_ {
     std::string relate;
     std::vector<CONLL_PREDICATE> arg;
 } CONLL;
-
-typedef struct _processor_product_info_ {
-    const char *name;
-    const char *version;
-    const char *manufacturer_name;
-    const char *home_page;
-    void *custom_info;
-} processor_product_info;
 
 class NLP {
 public:

@@ -18,18 +18,10 @@ IflytekTTS::IflytekTTS(const std::function<void(const char *, unsigned int)> &on
         : TTS(on_result, on_error) {}
 
 int IflytekTTS::initialize() {
-    login_params = "appid = 58e74906, work_dir = .";
-    int ret = MSPLogin(NULL, NULL, login_params.c_str());
-    if (MSP_SUCCESS != ret) {
-        BOOST_LOG_TRIVIAL(error) << "MSPLogin failed, error code:" << ret;
-        MSPLogout();
-        return -1;
-    }
     return 0;
 }
 
 int IflytekTTS::uninitialize() {
-    MSPLogout();
     return 0;
 }
 

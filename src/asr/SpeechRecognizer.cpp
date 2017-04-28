@@ -4,7 +4,7 @@
 
 #include "SpeechRecognizer.h"
 
-recognizer_product_info SpeechRecognizer::get_product_info() {
+processor_product_info SpeechRecognizer::get_product_info() {
     return _product_info;
 }
 

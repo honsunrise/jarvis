@@ -7,7 +7,6 @@
 #include <qisr.h>
 #include <msp_errors.h>
 #include <boost/log/trivial.hpp>
-#include <msp_cmn.h>
 #include <thread>
 #include "IflytekRecognizer.h"
 
@@ -38,14 +37,6 @@ void IflytekRecognizer::_error_happen(int errcode) {
 }
 
 int IflytekRecognizer::initialize() {
-    int errcode;
-    const char *login_params = "appid = 58e74906, work_dir = ., timeout = 5000";
-
-    errcode = MSPLogin(NULL, NULL, login_params);
-    if (MSP_SUCCESS != errcode) {
-        printf("MSPLogin failed , Error code %d.\n", errcode);
-    }
-
     session_begin_params =
             "sub = iat, domain = iat, language = zh_cn, "
                     "accent = mandarin, sample_rate = 16000, "
@@ -57,7 +48,6 @@ int IflytekRecognizer::initialize() {
 }
 
 int IflytekRecognizer::uninitialize() {
-    MSPLogout();
     return 0;
 }
 

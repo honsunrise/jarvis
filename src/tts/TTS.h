@@ -6,14 +6,7 @@
 #define JARVIS_TTS_H
 
 #include <functional>
-
-typedef struct _processor_product_info_ {
-    const char *name;
-    const char *version;
-    const char *manufacturer_name;
-    const char *home_page;
-    void *custom_info;
-} processor_product_info;
+#include "../engine.h"
 
 class TTS {
 public:

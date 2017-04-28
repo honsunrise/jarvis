@@ -11,7 +11,10 @@
 #include "VoiceRecord.h"
 #include "asr/engine/IflytekRecognizer.h"
 #include "nlp/engine/LPTProcessor.h"
+#include "tts/engine/IflytekTTS.h"
 #include "KeyEventHandler.h"
+#include "VoicePlayer.h"
+#include "engine.h"
 
 int main(int argc, char *argv[] ) {
     int status = 0;
@@ -55,6 +58,34 @@ int main(int argc, char *argv[] ) {
     boost::log::add_common_attributes();
 
     BOOST_LOG_TRIVIAL(info) << "is started!";
+
+    global_engine_init();
+
+    Voice::VoicePlayer *voicePlayer = new Voice::VoicePlayer();
+
+    std::vector<Voice::voice_dev> &&device_playback_list = Voice::list_playback_devices();
+    Voice::voice_dev will_open;
+
+    for (auto &dev : device_playback_list) {
+        if (dev.name == "default") {
+            will_open = dev;
+        }
+        BOOST_LOG_TRIVIAL(info) << "------------------------";
+        BOOST_LOG_TRIVIAL(info) << "Device name " << dev.name;
+        BOOST_LOG_TRIVIAL(info) << "Device desc " << dev.desc;
+    }
+    BOOST_LOG_TRIVIAL(info) << "------------------------";
+
+    BOOST_LOG_TRIVIAL(info) << "Open player " << voicePlayer->open(will_open, DEFAULT_FORMAT);
+    voicePlayer->start();
+
+    TTS *tts = new IflytekTTS(
+            [&](const char *data, unsigned int len) {
+                if(data != nullptr)
+                    voicePlayer->play(data, len);
+            }, [](int code) {
+            });
+
     NLP *nlp = new LPTProcessor([](std::vector<CONLL> conll) {
         BOOST_LOG_TRIVIAL(info) << "NLP [" << conll[1].content << "]!";
     }, [](int code) {
@@ -63,7 +94,7 @@ int main(int argc, char *argv[] ) {
 
     static std::string end_flag[] = {"。", "？", "！"};
 
-    SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp](const char *result, char is_last) {
+    SpeechRecognizer *recognizer = new IflytekRecognizer([&nlp, &tts](const char *result, char is_last) {
         static std::string last_recognizer = "贾维斯";
         for (auto &flag : end_flag) {
             if (flag == result) {
@@ -73,6 +104,9 @@ int main(int argc, char *argv[] ) {
                 nlp->start();
                 nlp->process(recognize_result);
                 nlp->end();
+                tts->start();
+                tts->process(recognize_result);
+                tts->end();
             }
         }
         last_recognizer += result;
@@ -107,14 +141,15 @@ int main(int argc, char *argv[] ) {
         end_process();
     }, 0);
 
+    tts->initialize();
+
     nlp->initialize();
 
     recognizer->initialize();
 
-    std::vector<Voice::voice_dev> &&device_list = Voice::list_capture_devices();
-    Voice::voice_dev will_open;
+    std::vector<Voice::voice_dev> &&device_capture_list = Voice::list_capture_devices();
 
-    for (auto &dev : device_list) {
+    for (auto &dev : device_capture_list) {
         if (dev.name == "default") {
             will_open = dev;
         }
@@ -124,8 +159,7 @@ int main(int argc, char *argv[] ) {
     }
     BOOST_LOG_TRIVIAL(info) << "------------------------";
 
-    BOOST_LOG_TRIVIAL(info) << "Open cap "
-                            << voiceRecord->open(will_open, DEFAULT_FORMAT);
+    BOOST_LOG_TRIVIAL(info) << "Open capture " << voiceRecord->open(will_open, DEFAULT_FORMAT);
 
     KeyEventHandler *keyEventHandler;
     keyEventHandler = new KeyEventHandler(
@@ -166,10 +200,15 @@ int main(int argc, char *argv[] ) {
     delete keyEventHandler;
     recognizer->uninitialize();
     nlp->uninitialize();
+    tts->uninitialize();
+    voicePlayer->close();
     BOOST_LOG_TRIVIAL(info) << "Close cap " << voiceRecord->close();
+    BOOST_LOG_TRIVIAL(info) << "Close player " << voicePlayer->close();
     delete nlp;
     delete recognizer;
     delete voiceRecord;
+    delete voicePlayer;
+    global_engine_uninit();
     BOOST_LOG_TRIVIAL(info) << "Jarvis exit.";
     return status;
 }

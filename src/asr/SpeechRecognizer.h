@@ -6,14 +6,7 @@
 #define ZRPC_SPEECHRECOGNIZER_H
 
 #include <functional>
-
-typedef struct _recognizer_product_info_ {
-    const char *name;
-    const char *version;
-    const char *manufacturer_name;
-    const char *home_page;
-    void *custom_info;
-} recognizer_product_info;
+#include "../engine.h"
 
 class SpeechRecognizer {
 public:
@@ -27,7 +20,7 @@ public:
 
     virtual ~SpeechRecognizer();
 
-    inline recognizer_product_info get_product_info();
+    inline processor_product_info get_product_info();
 
     virtual int initialize() = 0;
 
@@ -45,7 +38,7 @@ protected:
     std::function<void()> _on_end;
     std::function<void(int reason)> _on_error;
 private:
-    recognizer_product_info _product_info;
+    processor_product_info _product_info;
 };
 
 #endif //ZRPC_SPEECHRECOGNIZER_H
