@@ -18,7 +18,7 @@ LPTProcessor::LPTProcessor(const std::function<void(std::vector<CONLL> conll)> &
                            const std::function<void(int)> &on_error) : NLP(on_result, on_error) {}
 
 int LPTProcessor::initialize() {
-    api_key = "81o4m9i1s5X5B2u5w1r8cb1jljqgfkpjqQKXypmj";
+    api_key = "O111T730w3BZaUJshXbcFcuQrQuiwSBD5Bjl2cBe";
     io_service = new boost::asio::io_service;
     return 0;
 }
@@ -41,7 +41,7 @@ int LPTProcessor::process(std::string data) {
     ss << "pattern=all&format=json";
     ss << "&api_key=" << api_key;
     ss << "&text=" << data;
-    AsyncHttpClient c(*io_service, "ltpapi.voicecloud.cn", AsyncHttpClient::POST, "/analysis/", ss.str(),
+    AsyncHttpClient c(*io_service, "api.ltp-cloud.com", AsyncHttpClient::POST, "/analysis/", ss.str(),
                       AsyncHttpClient::URLENCODE,
                       [&](std::string error) {
                           _on_error(-1);
