@@ -47,28 +47,32 @@ int LPTProcessor::process(std::string data) {
                           _on_error(-1);
                       },
                       [&](unsigned int code, std::vector<std::string> headers, std::string content) {
-                          auto j = json::parse(content);
-                          j = j[0][0];
-                          std::vector<CONLL> conlls;
-                          for (auto &k : j) {
-                              CONLL conll;
-                              conll.id = k["id"];
-                              conll.pos = k["pos"];
-                              conll.ne = k["ne"];
-                              conll.content = k["cont"];
-                              conll.parent = k["parent"];
-                              conll.relate = k["relate"];
-                              for (auto &l : k["arg"]) {
-                                  CONLL_PREDICATE conll_predicate;
-                                  conll_predicate.id = l["id"];
-                                  conll_predicate.type = l["type"];
-                                  conll_predicate.begin = l["beg"];
-                                  conll_predicate.end = l["end"];
-                                  conll.arg.push_back(conll_predicate);
+                          if (code == 200) {
+                              auto j = json::parse(content);
+                              j = j[0][0];
+                              std::vector<CONLL> conlls;
+                              for (auto &k : j) {
+                                  CONLL conll;
+                                  conll.id = k["id"];
+                                  conll.pos = k["pos"];
+                                  conll.ne = k["ne"];
+                                  conll.content = k["cont"];
+                                  conll.parent = k["parent"];
+                                  conll.relate = k["relate"];
+                                  for (auto &l : k["arg"]) {
+                                      CONLL_PREDICATE conll_predicate;
+                                      conll_predicate.id = l["id"];
+                                      conll_predicate.type = l["type"];
+                                      conll_predicate.begin = l["beg"];
+                                      conll_predicate.end = l["end"];
+                                      conll.arg.push_back(conll_predicate);
+                                  }
+                                  conlls.push_back(conll);
                               }
-                              conlls.push_back(conll);
+                              _on_result(conlls);
+                          } else {
+                              _on_error(-1);
                           }
-                          _on_result(conlls);
                       });
     io_service->run();
     return 0;

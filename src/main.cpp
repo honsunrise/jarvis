@@ -92,13 +92,13 @@ int main(int argc, char *argv[]) {
         tts->process(text);
         tts->end();
     }, [](int code) {
-
+        BOOST_LOG_TRIVIAL(info) << "Chat Error[" << code << "]!";
     });
 
     NLP *nlp = new LPTProcessor([](std::vector<CONLL> conll) {
         BOOST_LOG_TRIVIAL(info) << "NLP [" << conll[1].content << "]!";
     }, [](int code) {
-
+        BOOST_LOG_TRIVIAL(info) << "NLP Error[" << code << "]!";
     });
 
     static std::string end_flag[] = {"。", "？", "！"};
