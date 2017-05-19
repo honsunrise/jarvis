@@ -52,3 +52,4 @@ fabric.properties
 *.exe
 *.out
 *.app
+data/corpus_process.txt
