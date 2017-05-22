@@ -25,8 +25,29 @@ typedef struct _CONLL_ {
     std::string ne;
     int parent;
     std::string relate;
+    int semparent;
+    std::string semrelate;
     std::vector<CONLL_PREDICATE> arg;
 } CONLL;
+
+static CONLL NULL_CONLL = {.id = -1};
+
+inline CONLL search_semrelate(std::vector<CONLL> conlls, std::string text) {
+    for (CONLL conll : conlls) {
+        if (conll.semrelate == text)
+            return conll;
+    }
+    return NULL_CONLL;
+}
+
+inline std::vector<CONLL> search_semparent(std::vector<CONLL> conlls, int p) {
+    std::vector<CONLL> ret;
+    for (CONLL conll : conlls) {
+        if (conll.semparent == p)
+            ret.push_back(conll);
+    }
+    return ret;
+}
 
 class NLP {
 public:

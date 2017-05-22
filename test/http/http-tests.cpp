@@ -8,7 +8,7 @@ static long _http_get_test() {
     try {
         boost::asio::io_service io_service;
         AsyncHttpClient c(io_service, "ltpapi.voicecloud.cn", AsyncHttpClient::POST, "/analysis/",
-                          "api_key=81o4m9i1s5X5B2u5w1r8cb1jljqgfkpjqQKXypmj&text=小明打开灯。&pattern=all&format=json",
+                          "api_key=81o4m9i1s5X5B2u5w1r8cb1jljqgfkpjqQKXypmj&text=小明把球泡灯设置成绿色。&pattern=all&format=json",
                           AsyncHttpClient::URLENCODE,
                           [](std::string error) {
                               std::cout << error << std::endl;

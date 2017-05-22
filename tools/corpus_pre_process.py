@@ -40,7 +40,7 @@ if __name__ == '__main__':
                     if m:
                         for h in range(0, 23):
                             for i in range(0, 59):
-                                t = '%2d:%2d' % (h, i)
+                                t = '%02d:%02d' % (h, i)
                                 r = re.sub(TIME_PATTERN, t, text)
                                 out_file.write(nh + r + '\n')
                     else:

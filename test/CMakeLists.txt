@@ -41,12 +41,19 @@ add_executable(http-tests ${SOURCE_HTTP_FILES})
 target_link_libraries(http-tests gtest_main)
 add_test(NAME http-tests COMMAND http-tests)
 
-set(SOURCE_HTTP_FILES http/tts-tests.cpp ../src/tts/engine/IflytekTTS.cpp ../src/tts/TTS.cpp ../src/Voice.cpp ../src/VoicePlayer.cpp)
+set(SOURCE_HTTP_FILES tts-tests.cpp ../src/tts/engine/IflytekTTS.cpp ../src/tts/TTS.cpp ../src/Voice.cpp ../src/VoicePlayer.cpp)
 add_executable(tts-tests ${SOURCE_HTTP_FILES})
 target_link_libraries(tts-tests gtest_main msc asound)
 add_test(NAME tts-tests COMMAND tts-tests)
 
+set(SOURCE_HTTP_FILES action-gen-tests.cpp ../src/nlp/NLP.cpp ../src/nlp/engine/LPTProcessor.cpp ../src/nlp/ActionAnalytics.cpp)
+add_executable(action-gen-tests ${SOURCE_HTTP_FILES})
+target_link_libraries(action-gen-tests gtest_main)
+add_test(NAME action-gen-tests COMMAND action-gen-tests)
+
+
 if(Boost_FOUND)
     target_link_libraries(http-tests ${Boost_LIBRARIES})
     target_link_libraries(tts-tests ${Boost_LIBRARIES})
+    target_link_libraries(action-gen-tests ${Boost_LIBRARIES})
 endif()

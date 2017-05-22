@@ -59,6 +59,8 @@ int LPTProcessor::process(std::string data) {
                                   conll.content = k["cont"];
                                   conll.parent = k["parent"];
                                   conll.relate = k["relate"];
+                                  conll.semparent = k["semparent"];
+                                  conll.semrelate = k["semrelate"];
                                   for (auto &l : k["arg"]) {
                                       CONLL_PREDICATE conll_predicate;
                                       conll_predicate.id = l["id"];

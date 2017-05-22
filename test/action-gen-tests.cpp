@@ -2,7 +2,6 @@
 // Created by zhsyourai on 4/27/17.
 //
 #include <gtest/gtest.h>
-#include <iostream>
 #include <fstream>
 #include <atomic>
 #include <boost/log/trivial.hpp>
@@ -12,47 +11,36 @@
 #include <boost/log/support/date_time.hpp>
 #include <boost/core/null_deleter.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
-#include "tts/engine/IflytekTTS.h"
+#include "nlp/NLP.h"
+#include "nlp/ActionAnalytics.h"
+#include "nlp/engine/LPTProcessor.h"
 #include "VoicePlayer.h"
 
-static long _tts_test() {
-    std::vector<Voice::voice_dev> &&device_list = Voice::list_playback_devices();
-    Voice::voice_dev will_open;
+static long _action_test() {
+    ActionAnalytics *analytics = new ActionAnalytics();
+    NLP *nlp = new LPTProcessor([&](std::vector<CONLL> conll) {
+        Action &&action = analytics->analytics(conll);
+    }, [](int code) {
+        BOOST_LOG_TRIVIAL(info) << "NLP Error[" << code << "]!";
+    });
+    nlp->initialize();
+    nlp->start();
+    nlp->process("小明打开灯。");
+    nlp->end();
 
-    for (auto &dev : device_list) {
-        if (dev.name == "default") {
-            will_open = dev;
-        }
-        BOOST_LOG_TRIVIAL(info) << "------------------------";
-        BOOST_LOG_TRIVIAL(info) << "Device name " << dev.name;
-        BOOST_LOG_TRIVIAL(info) << "Device desc " << dev.desc;
-    }
-    BOOST_LOG_TRIVIAL(info) << "------------------------";
-    Voice::VoicePlayer voicePlayer;
-    Voice::wave_format fmt = DEFAULT_FORMAT;
-    voicePlayer.open(will_open, fmt);
-    voicePlayer.start();
-    TTS *tts = new IflytekTTS(
-            [&](const char *data, unsigned int len) {
-                if(data != nullptr)
-                    voicePlayer.play(data, len);
-            }, [](int code) {
+    nlp->start();
+    nlp->process("小明把灯泡设置成绿色。");
+    nlp->end();
 
-            });
-    tts->initialize();
-    tts->start();
-    tts->process("老子有一句妈买劈不知当讲不当讲老子有一句妈买劈不知当讲不当讲");
-    sleep(5);
-    tts->end();
-    tts->uninitialize();
-    voicePlayer.stop();
-    voicePlayer.close();
-    sleep(10);
+    nlp->start();
+    nlp->process("小明空调多少度？");
+    nlp->end();
+    nlp->uninitialize();
     return 0;
 }
 
-TEST (HttpTest, GetTest) {
-    EXPECT_EQ (0, _tts_test());
+TEST (ActionTests, ActionTest) {
+    EXPECT_EQ (0, _action_test());
 }
 
 int main(int argc, char *argv[]) {
@@ -64,8 +52,6 @@ int main(int argc, char *argv[]) {
     // add stream
     backend->add_stream(boost::shared_ptr<std::ostream>(
             &std::clog, boost::null_deleter()));
-    backend->add_stream(boost::shared_ptr<std::ostream>(
-            new std::ofstream("sample.log", std::ofstream::app)));
 
     // other setting
     backend->auto_flush(true);
