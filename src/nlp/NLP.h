@@ -28,6 +28,10 @@ typedef struct _CONLL_ {
     int semparent;
     std::string semrelate;
     std::vector<CONLL_PREDICATE> arg;
+
+    operator bool() {
+        return id != -1;
+    }
 } CONLL;
 
 static CONLL NULL_CONLL = {.id = -1};
@@ -42,6 +46,8 @@ inline CONLL search_semrelate(std::vector<CONLL> conlls, std::string text) {
 
 inline std::vector<CONLL> search_semparent(std::vector<CONLL> conlls, int p) {
     std::vector<CONLL> ret;
+    if(p == -1)
+        return ret;
     for (CONLL conll : conlls) {
         if (conll.semparent == p)
             ret.push_back(conll);

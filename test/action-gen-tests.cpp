@@ -20,21 +20,39 @@ static long _action_test() {
     ActionAnalytics *analytics = new ActionAnalytics();
     NLP *nlp = new LPTProcessor([&](std::vector<CONLL> conll) {
         Action &&action = analytics->analytics(conll);
+        BOOST_LOG_TRIVIAL(info) << "-------------------";
+        BOOST_LOG_TRIVIAL(info) << "Action:" << action.action;
+        BOOST_LOG_TRIVIAL(info) << "Target:" << action.target;
+        BOOST_LOG_TRIVIAL(info) << "Param:";
+        for (auto p : action.params) {
+            BOOST_LOG_TRIVIAL(info) << p.first << "==>" << p.second;
+        }
+        BOOST_LOG_TRIVIAL(info) << "-------------------";
+
     }, [](int code) {
         BOOST_LOG_TRIVIAL(info) << "NLP Error[" << code << "]!";
     });
     nlp->initialize();
-    nlp->start();
-    nlp->process("小明打开灯。");
-    nlp->end();
 
     nlp->start();
-    nlp->process("小明把灯泡设置成绿色。");
+    nlp->process("我打开灯。");
     nlp->end();
 
+    sleep(1);
     nlp->start();
-    nlp->process("小明空调多少度？");
+    nlp->process("我关上新风系统。");
     nlp->end();
+
+    sleep(1);
+    nlp->start();
+    nlp->process("把灯泡设置成激情模式。");
+    nlp->end();
+
+    sleep(1);
+    nlp->start();
+    nlp->process("我空调多少度？");
+    nlp->end();
+
     nlp->uninitialize();
     return 0;
 }
