@@ -3,9 +3,22 @@
 //
 
 #include <vector>
+#include <iostream>
 #include "ActionAnalytics.h"
 
 Action ActionAnalytics::analytics(std::vector<CONLL> conlls) {
+    buildGraph(conlls);
+    Graph::vertex_iterator vertexIt, vertexEnd;
+    Graph::adjacency_iterator neighbourIt, neighbourEnd;
+    boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph);
+    for (; vertexIt != vertexEnd; ++vertexIt)
+    {
+        std::cout << *vertexIt << " is connected with ";
+        boost::tie(neighbourIt, neighbourEnd) = boost::adjacent_vertices(*vertexIt, sem_graph);
+        for (; neighbourIt != neighbourEnd; ++neighbourIt)
+            std::cout << *neighbourIt << " ";
+        std::cout << "\n";
+    }
     Action action;
     std::string nh;
     auto root = search_semrelate(conlls, "Root");
@@ -16,16 +29,58 @@ Action ActionAnalytics::analytics(std::vector<CONLL> conlls) {
     if (pat) {
         auto pats = search_semparent(conlls, pat.id);
         auto nmod = search_semrelate(pats, "Nmod");
+        auto desc = search_semrelate(pats, "Feat");
         action.target = nmod.content + pat.content;
         auto eSucc = search_semrelate(sems, "eSucc");
-        auto eSuccs = search_semparent(conlls, eSucc.id);
-        int i = 0;
-        for (auto e : eSuccs) {
-            action.params["p" + i++] = e.content;
+        if(eSucc) {
+            auto eSuccs = search_semparent(conlls, eSucc.id);
+            for (auto e : eSuccs) {
+                auto es = search_semparent(conlls, e.id);
+                std::for_each(es.begin(), es.end(), [&](CONLL &a){
+                    action.params[e.content].push_back(a.content);
+                });
+            }
         }
 
     }
     return action;
+}
+
+void ActionAnalytics::buildGraph(std::vector<CONLL> conlls) {
+    sem_graph.clear();
+    for (auto conll : conlls) {
+        Vertex vertex = boost::add_vertex(sem_graph);
+        vertex_context[vertex] = conll.content;
+        vertex_index2[vertex] = conll.id;
+    }
+    for (auto conll : conlls) {
+        int search_done = 0;
+        Vertex u1;
+        VertexIterator vertexIt, vertexEnd;
+        boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph);
+        for (; vertexIt != vertexEnd; ++vertexIt) {
+            if (vertex_index2[*vertexIt] == conll.id) {
+                u1 = *vertexIt;
+                search_done++;
+                break;
+            }
+        }
+        for (auto sem : conll.sem) {
+            Vertex u2;
+            boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph);
+            for (; vertexIt != vertexEnd; ++vertexIt) {
+                if (vertex_index2[*vertexIt] == sem.parent) {
+                    u2 = *vertexIt;
+                    search_done++;
+                    break;
+                }
+            }
+            if(search_done == 2) {
+                Edge edge = boost::add_edge(u2, u1, sem_graph).first;
+                edge_relate[edge] = sem.relate;
+            }
+        }
+    }
 }
 
 std::string ActionAnalytics::rootToAction(CONLL root) {

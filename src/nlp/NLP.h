@@ -18,6 +18,12 @@ typedef struct _CONLL_PREDICATE_ {
     int end;
 } CONLL_PREDICATE;
 
+typedef struct _CONLL_SEM_ {
+    int id;
+    int parent;
+    std::string relate;
+} CONLL_SEM;
+
 typedef struct _CONLL_ {
     int id;
     std::string content;
@@ -28,6 +34,7 @@ typedef struct _CONLL_ {
     int semparent;
     std::string semrelate;
     std::vector<CONLL_PREDICATE> arg;
+    std::vector<CONLL_SEM> sem;
 
     operator bool() {
         return id != -1;

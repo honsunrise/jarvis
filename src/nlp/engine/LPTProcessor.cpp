@@ -69,6 +69,13 @@ int LPTProcessor::process(std::string data) {
                                       conll_predicate.end = l["end"];
                                       conll.arg.push_back(conll_predicate);
                                   }
+                                  for (auto &l : k["sem"]) {
+                                      CONLL_SEM sem;
+                                      sem.id = l["id"];
+                                      sem.parent = l["parent"];
+                                      sem.relate = l["relate"];
+                                      conll.sem.push_back(sem);
+                                  }
                                   conlls.push_back(conll);
                               }
                               _on_result(conlls);

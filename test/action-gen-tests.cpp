@@ -16,6 +16,19 @@
 #include "nlp/engine/LPTProcessor.h"
 #include "VoicePlayer.h"
 
+template<typename T>
+boost::log::formatting_ostream &operator<<(boost::log::formatting_ostream &out, std::vector<T> &v) {
+    out << "[";
+    size_t last = v.size() - 1;
+    for (size_t i = 0; i < v.size(); ++i) {
+        out << v[i];
+        if (i != last)
+            out << ", ";
+    }
+    out << "]";
+    return out;
+}
+
 static long _action_test() {
     ActionAnalytics *analytics = new ActionAnalytics();
     NLP *nlp = new LPTProcessor([&](std::vector<CONLL> conll) {
@@ -25,7 +38,7 @@ static long _action_test() {
         BOOST_LOG_TRIVIAL(info) << "Target:" << action.target;
         BOOST_LOG_TRIVIAL(info) << "Param:";
         for (auto p : action.params) {
-            BOOST_LOG_TRIVIAL(info) << p.first << "==>" << p.second;
+            BOOST_LOG_TRIVIAL(info) << "\t" << p.first << "==>" << p.second;
         }
         BOOST_LOG_TRIVIAL(info) << "-------------------";
 
@@ -40,17 +53,22 @@ static long _action_test() {
 
     sleep(1);
     nlp->start();
-    nlp->process("我关上新风系统。");
+    nlp->process("关闭新风系统。");
     nlp->end();
 
     sleep(1);
     nlp->start();
-    nlp->process("把灯泡设置成激情模式。");
+    nlp->process("把客厅灯设置成激情模式。");
     nlp->end();
 
     sleep(1);
     nlp->start();
-    nlp->process("我空调多少度？");
+    nlp->process("把灯泡设置成绿色。");
+    nlp->end();
+
+    sleep(1);
+    nlp->start();
+    nlp->process("空调多少度？");
     nlp->end();
 
     nlp->uninitialize();
