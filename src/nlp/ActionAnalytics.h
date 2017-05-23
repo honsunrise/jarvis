@@ -43,6 +43,8 @@ private:
 
     void buildGraph(std::vector<CONLL> conlls);
 
+    void buildTree(std::vector<CONLL> conlls);
+
     std::vector<std::string> OPEN_LIST{
             "打开"
     };
@@ -54,6 +56,7 @@ private:
     };
 
     Graph sem_graph;
+    Graph sem_tree;
 };
 
 

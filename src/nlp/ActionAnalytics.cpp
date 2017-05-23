@@ -83,6 +83,41 @@ void ActionAnalytics::buildGraph(std::vector<CONLL> conlls) {
     }
 }
 
+void ActionAnalytics::buildTree(std::vector<CONLL> conlls) {
+    sem_tree.clear();
+    for (auto conll : conlls) {
+        Vertex vertex = boost::add_vertex(sem_graph);
+        vertex_context[vertex] = conll.content;
+        vertex_index2[vertex] = conll.id;
+    }
+    for (auto conll : conlls) {
+        int search_done = 0;
+        Vertex u1;
+        VertexIterator vertexIt, vertexEnd;
+        boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph);
+        for (; vertexIt != vertexEnd; ++vertexIt) {
+            if (vertex_index2[*vertexIt] == conll.id) {
+                u1 = *vertexIt;
+                search_done++;
+                break;
+            }
+        }
+        Vertex u2;
+        boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph);
+        for (; vertexIt != vertexEnd; ++vertexIt) {
+            if (vertex_index2[*vertexIt] == conll.semparent) {
+                u2 = *vertexIt;
+                search_done++;
+                break;
+            }
+        }
+        if(search_done == 2) {
+            Edge edge = boost::add_edge(u2, u1, sem_graph).first;
+            edge_relate[edge] = conll.semrelate;
+        }
+    }
+}
+
 std::string ActionAnalytics::rootToAction(CONLL root) {
     bool open = std::find(OPEN_LIST.begin(), OPEN_LIST.end(), root.content) != OPEN_LIST.end();
     bool close = !open && std::find(CLOSE_LIST.begin(), CLOSE_LIST.end(), root.content) != CLOSE_LIST.end();
