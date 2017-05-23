@@ -9,8 +9,9 @@
 #include <algorithm>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/dijkstra_shortest_paths.hpp>
-#include <map>
+#include <boost/graph/graph_utility.hpp>
+#include <boost/graph/graph_as_tree.hpp>
+#include <boost/graph/visitors.hpp>
 
 
 struct Action {
@@ -20,13 +21,13 @@ struct Action {
 };
 
 class ActionAnalytics {
+public:
     typedef boost::property<boost::edge_name_t, std::string> relate;
     typedef boost::property<boost::vertex_name_t, std::string, boost::property<boost::vertex_index2_t, int>> context;
-    typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, context, relate> Graph;
+    typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, context, relate> Graph;
     typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
     typedef boost::graph_traits<Graph>::edge_descriptor Edge;
     typedef boost::graph_traits<Graph>::vertex_iterator VertexIterator;
-public:
     Action analytics(std::vector<CONLL> conlls);
 
 private:
@@ -44,6 +45,8 @@ private:
     void buildGraph(std::vector<CONLL> conlls);
 
     void buildTree(std::vector<CONLL> conlls);
+
+    Vertex findTreeRoot();
 
     std::vector<std::string> OPEN_LIST{
             "打开"
