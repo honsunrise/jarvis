@@ -22,23 +22,36 @@ struct Action {
 
 class ActionAnalytics {
 public:
-    typedef boost::property<boost::edge_name_t, std::string> relate;
-    typedef boost::property<boost::vertex_name_t, std::string, boost::property<boost::vertex_index2_t, int>> context;
-    typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, context, relate> Graph;
-    typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
-    typedef boost::graph_traits<Graph>::edge_descriptor Edge;
-    typedef boost::graph_traits<Graph>::vertex_iterator VertexIterator;
+    typedef boost::property<boost::edge_name_t, std::string> relate_t;
+    typedef boost::property<boost::vertex_name_t, std::string, boost::property<boost::vertex_index2_t, int>> context_t;
+    typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, context_t, relate_t> graph_t;
+    typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
+    typedef boost::graph_traits<graph_t>::edge_descriptor edge_t;
+    typedef boost::graph_traits<graph_t>::vertex_iterator vertex_iterator_t;
+    typedef boost::property_map<graph_t, boost::vertex_index_t>::type vertex_index_t;
+    typedef boost::property_map<graph_t, boost::vertex_name_t>::type vertex_name_t;
+    typedef boost::property_map<graph_t, boost::vertex_index2_t>::type vertex_index2_t;
+    typedef boost::property_map<graph_t, boost::edge_name_t>::type edge_name_t;
+    typedef boost::iterator_property_map<std::vector<boost::default_color_type >::iterator, vertex_index_t> color_map_t;
+    typedef boost::iterator_property_map<std::vector<vertex_t >::iterator, vertex_index_t> parent_map_t;
+    typedef boost::graph_as_tree<graph_t, parent_map_t> tree_t;
+
+    ActionAnalytics();
+
     Action analytics(std::vector<CONLL> conlls);
 
 private:
-    typename boost::property_map<Graph, boost::vertex_name_t>::type vertex_context =
-            boost::get(boost::vertex_name, sem_graph);
+    vertex_index_t g_vertex_index;
+    vertex_index_t t_vertex_index;
 
-    typename boost::property_map<Graph, boost::vertex_index2_t>::type vertex_index2 =
-            boost::get(boost::vertex_index2, sem_graph);
+    vertex_name_t g_vertex_context;
+    vertex_name_t t_vertex_context;
 
-    typename boost::property_map<Graph, boost::edge_name_t>::type edge_relate =
-            boost::get(boost::edge_name, sem_graph);
+    vertex_index2_t g_vertex_id;
+    vertex_index2_t t_vertex_id;
+
+    edge_name_t g_edge_relate;
+    edge_name_t t_edge_relate;
 
     std::string rootToAction(CONLL root);
 
@@ -46,7 +59,7 @@ private:
 
     void buildTree(std::vector<CONLL> conlls);
 
-    Vertex findTreeRoot();
+    vertex_t findTreeRoot();
 
     std::vector<std::string> OPEN_LIST{
             "打开"
@@ -58,8 +71,9 @@ private:
             "设置", "设"
     };
 
-    Graph sem_graph;
-    Graph sem_tree;
+    graph_t sem_graph;
+    graph_t sem_graph_tree;
+    vertex_t tree_root;
 };
 
 

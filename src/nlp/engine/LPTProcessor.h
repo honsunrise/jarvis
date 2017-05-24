@@ -15,7 +15,7 @@
     "pos": "v",
     "ne": "O",
     "parent": -1,
-    "relate": "HED",
+    "relate_t": "HED",
     "arg": [
      {
       "id": 0,

@@ -5,30 +5,53 @@
 #include <vector>
 #include <iostream>
 #include "ActionAnalytics.h"
-template<class Graph>
-class Visitor: public boost::default_dfs_visitor
-{
+
+class Visitor : public boost::default_dfs_visitor {
 public:
-    typedef typename
-    boost::graph_traits<Graph>::vertex_descriptor Vertex;
+    Visitor(ActionAnalytics *analytics) : analytics(analytics) {}
 
-    void discover_vertex(Vertex v, const Graph& g)
-    {std::cout << v << " "; return;}
+    template<class Vertex, class Graph>
+    void discover_vertex(Vertex v, const Graph &g) {
+        std::cout << v << " ";
+        return;
+    }
 
-    void start_vertex(Vertex v, const Graph& g)
-    {std::cout << v << " "; return;}
+    template<class Vertex, class Graph>
+    void start_vertex(Vertex v, const Graph &g) {
+        std::cout << v << " ";
+        return;
+    }
+
+    Action get_action() {
+        return Action();
+    }
+
+private:
+    ActionAnalytics *analytics;
 };
 
+ActionAnalytics::ActionAnalytics() {
+    g_vertex_context = boost::get(boost::vertex_name, sem_graph);
+    g_vertex_id = boost::get(boost::vertex_index2, sem_graph);
+    g_edge_relate = boost::get(boost::edge_name, sem_graph);
+    g_vertex_index = boost::get(boost::vertex_index, sem_graph);
+
+    t_vertex_context = boost::get(boost::vertex_name, sem_graph_tree);
+    t_vertex_id = boost::get(boost::vertex_index2, sem_graph_tree);
+    t_edge_relate = boost::get(boost::edge_name, sem_graph_tree);
+    t_vertex_index = boost::get(boost::vertex_index, sem_graph_tree);
+}
 
 Action ActionAnalytics::analytics(std::vector<CONLL> conlls) {
     Action action;
     buildGraph(conlls);
     buildTree(conlls);
-    Vertex root = findTreeRoot();
-    Visitor<Graph> vis;
-    typedef std::vector<boost::default_color_type> color_map_t;
-    color_map_t color_map;
-    boost::depth_first_visit(sem_tree, root, boost::visitor(vis), boost::vertex_color_map(color_map));
+    vertex_t root = findTreeRoot();
+    Visitor vis(this);
+    std::vector<boost::default_color_type> color_map_r(boost::num_vertices(sem_graph_tree));
+    auto color_map = boost::make_iterator_property_map(color_map_r.begin(), t_vertex_index);
+    boost::depth_first_search(sem_graph_tree, vis, color_map, root);
+    action = vis.get_action();
 //    std::string nh;
 //    auto root = search_semrelate(conlls, "Root");
 //    action.action = rootToAction(root);
@@ -58,79 +81,81 @@ Action ActionAnalytics::analytics(std::vector<CONLL> conlls) {
 void ActionAnalytics::buildGraph(std::vector<CONLL> conlls) {
     sem_graph.clear();
     for (auto conll : conlls) {
-        Vertex vertex = boost::add_vertex(sem_graph);
-        vertex_context[vertex] = conll.content;
-        vertex_index2[vertex] = conll.id;
+        vertex_t vertex = boost::add_vertex(sem_graph);
+        g_vertex_context[vertex] = conll.content;
+        g_vertex_id[vertex] = conll.id;
     }
     for (auto conll : conlls) {
         int search_done = 0;
-        Vertex u1;
-        VertexIterator vertexIt, vertexEnd;
+        vertex_t u1;
+        vertex_iterator_t vertexIt, vertexEnd;
         boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph);
         for (; vertexIt != vertexEnd; ++vertexIt) {
-            if (vertex_index2[*vertexIt] == conll.id) {
+            if (g_vertex_id[*vertexIt] == conll.id) {
                 u1 = *vertexIt;
                 search_done++;
                 break;
             }
         }
         for (auto sem : conll.sem) {
-            Vertex u2;
+            vertex_t u2;
             boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph);
             for (; vertexIt != vertexEnd; ++vertexIt) {
-                if (vertex_index2[*vertexIt] == sem.parent) {
+                if (g_vertex_id[*vertexIt] == sem.parent) {
                     u2 = *vertexIt;
                     search_done++;
                     break;
                 }
             }
-            if(search_done == 2) {
-                Edge edge = boost::add_edge(u2, u1, sem_graph).first;
-                edge_relate[edge] = sem.relate;
+            if (search_done == 2) {
+                edge_t edge = boost::add_edge(u2, u1, sem_graph).first;
+                g_edge_relate[edge] = sem.relate;
             }
         }
     }
 }
 
 void ActionAnalytics::buildTree(std::vector<CONLL> conlls) {
-    sem_tree.clear();
+    sem_graph_tree.clear();
     for (auto conll : conlls) {
-        Vertex vertex = boost::add_vertex(sem_tree);
-        vertex_context[vertex] = conll.content;
-        vertex_index2[vertex] = conll.id;
+        vertex_t vertex = boost::add_vertex(sem_graph_tree);
+        t_vertex_context[vertex] = conll.content;
+        t_vertex_id[vertex] = conll.id;
     }
     for (auto conll : conlls) {
         int search_done = 0;
-        Vertex u1;
-        VertexIterator vertexIt, vertexEnd;
-        boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_tree);
+        vertex_t u1;
+        vertex_iterator_t vertexIt, vertexEnd;
+        boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph_tree);
         for (; vertexIt != vertexEnd; ++vertexIt) {
-            if (vertex_index2[*vertexIt] == conll.id) {
+            if (t_vertex_id[*vertexIt] == conll.id) {
                 u1 = *vertexIt;
                 search_done++;
                 break;
             }
         }
-        Vertex u2;
-        boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_tree);
+        vertex_t u2;
+        boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph_tree);
         for (; vertexIt != vertexEnd; ++vertexIt) {
-            if (vertex_index2[*vertexIt] == conll.semparent) {
+            if (t_vertex_id[*vertexIt] == conll.semparent) {
                 u2 = *vertexIt;
                 search_done++;
                 break;
             }
         }
-        if(search_done == 2) {
-            Edge edge = boost::add_edge(u2, u1, sem_tree).first;
-            edge_relate[edge] = conll.semrelate;
+        if (search_done == 2) {
+            edge_t edge = boost::add_edge(u2, u1, sem_graph_tree).first;
+            t_edge_relate[edge] = conll.semrelate;
         }
     }
+    tree_root = findTreeRoot();
 }
 
 std::string ActionAnalytics::rootToAction(CONLL root) {
     bool open = std::find(OPEN_LIST.begin(), OPEN_LIST.end(), root.content) != OPEN_LIST.end();
     bool close = !open && std::find(CLOSE_LIST.begin(), CLOSE_LIST.end(), root.content) != CLOSE_LIST.end();
-    bool setting = !open && !close && std::find(SETTING_LIST.begin(), SETTING_LIST.end(), root.content) != SETTING_LIST.end();
+    bool setting =
+            !open && !close && std::find(SETTING_LIST.begin(), SETTING_LIST.end(), root.content) != SETTING_LIST.end();
     if (open)
         return "OPEN";
     else if (close)
@@ -140,13 +165,13 @@ std::string ActionAnalytics::rootToAction(CONLL root) {
     return "NONE";
 }
 
-ActionAnalytics::Vertex ActionAnalytics::findTreeRoot() {
-    VertexIterator vertexIt, vertexEnd;
-    boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_tree);
+ActionAnalytics::vertex_t ActionAnalytics::findTreeRoot() {
+    vertex_iterator_t vertexIt, vertexEnd;
+    boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph_tree);
     for (; vertexIt != vertexEnd; ++vertexIt) {
-        if (boost::in_degree(*vertexIt, sem_tree) == 0){
+        if (boost::in_degree(*vertexIt, sem_graph_tree) == 0) {
             return *vertexIt;
         }
     }
-    return Vertex();
+    return vertex_t();
 }

@@ -58,7 +58,7 @@ int LPTProcessor::process(std::string data) {
                                   conll.ne = k["ne"];
                                   conll.content = k["cont"];
                                   conll.parent = k["parent"];
-                                  conll.relate = k["relate"];
+                                  conll.relate = k["relate_t"];
                                   conll.semparent = k["semparent"];
                                   conll.semrelate = k["semrelate"];
                                   for (auto &l : k["arg"]) {
@@ -73,7 +73,7 @@ int LPTProcessor::process(std::string data) {
                                       CONLL_SEM sem;
                                       sem.id = l["id"];
                                       sem.parent = l["parent"];
-                                      sem.relate = l["relate"];
+                                      sem.relate = l["relate_t"];
                                       conll.sem.push_back(sem);
                                   }
                                   conlls.push_back(conll);
