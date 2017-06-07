@@ -17,6 +17,7 @@
 struct Action {
     std::string action;
     std::string target;
+    std::string source;
     std::map<std::string, std::vector<std::string>> params;
 };
 
@@ -40,6 +41,10 @@ public:
 
     Action analytics(std::vector<CONLL> conlls);
 
+    void discover_vertex(vertex_t v, Action &action);
+
+    void examine_edge(edge_t u, Action &action);
+
 private:
     vertex_index_t g_vertex_index;
     vertex_index_t t_vertex_index;
@@ -53,7 +58,9 @@ private:
     edge_name_t g_edge_relate;
     edge_name_t t_edge_relate;
 
-    std::string rootToAction(CONLL root);
+    std::string VToAction(std::string text);
+
+    std::pair<std::string, std::string> getVertextContext(vertex_t v);
 
     void buildGraph(std::vector<CONLL> conlls);
 

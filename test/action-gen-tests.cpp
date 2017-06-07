@@ -36,6 +36,7 @@ static long _action_test() {
         BOOST_LOG_TRIVIAL(info) << "-------------------";
         BOOST_LOG_TRIVIAL(info) << "Action:" << action.action;
         BOOST_LOG_TRIVIAL(info) << "Target:" << action.target;
+        BOOST_LOG_TRIVIAL(info) << "Source:" << action.source;
         BOOST_LOG_TRIVIAL(info) << "Param:";
         for (auto p : action.params) {
             BOOST_LOG_TRIVIAL(info) << "\t" << p.first << "==>" << p.second;
@@ -48,27 +49,27 @@ static long _action_test() {
     nlp->initialize();
 
     nlp->start();
-    nlp->process("我打开灯。");
+    nlp->process("小黑打开灯。");
     nlp->end();
 
     sleep(1);
     nlp->start();
-    nlp->process("关闭新风系统。");
+    nlp->process("小黑关闭新风系统。");
     nlp->end();
 
     sleep(1);
     nlp->start();
-    nlp->process("把客厅灯设置成激情模式。");
+    nlp->process("小黑把客厅灯设置成激情模式。");
     nlp->end();
 
     sleep(1);
     nlp->start();
-    nlp->process("把灯泡设置成绿色。");
+    nlp->process("小黑把灯泡设置成绿色。");
     nlp->end();
 
     sleep(1);
     nlp->start();
-    nlp->process("空调多少度？");
+    nlp->process("小黑空调多少度？");
     nlp->end();
 
     nlp->uninitialize();

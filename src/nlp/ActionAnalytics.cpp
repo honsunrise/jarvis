@@ -8,26 +8,23 @@
 
 class Visitor : public boost::default_dfs_visitor {
 public:
-    Visitor(ActionAnalytics *analytics) : analytics(analytics) {}
+    Visitor(ActionAnalytics *analytics, Action &action) : analytics(analytics), action(action) {}
 
     template<class Vertex, class Graph>
     void discover_vertex(Vertex v, const Graph &g) {
-        std::cout << v << " ";
+        analytics->discover_vertex(v, action);
         return;
     }
 
-    template<class Vertex, class Graph>
-    void start_vertex(Vertex v, const Graph &g) {
-        std::cout << v << " ";
+    template<class Edge, class Graph>
+    void examine_edge(Edge u, const Graph &g) {
+        analytics->examine_edge(u, action);
         return;
-    }
-
-    Action get_action() {
-        return Action();
     }
 
 private:
     ActionAnalytics *analytics;
+    Action &action;
 };
 
 ActionAnalytics::ActionAnalytics() {
@@ -46,35 +43,10 @@ Action ActionAnalytics::analytics(std::vector<CONLL> conlls) {
     Action action;
     buildGraph(conlls);
     buildTree(conlls);
-    vertex_t root = findTreeRoot();
-    Visitor vis(this);
+    Visitor vis(this, action);
     std::vector<boost::default_color_type> color_map_r(boost::num_vertices(sem_graph_tree));
     auto color_map = boost::make_iterator_property_map(color_map_r.begin(), t_vertex_index);
-    boost::depth_first_search(sem_graph_tree, vis, color_map, root);
-    action = vis.get_action();
-//    std::string nh;
-//    auto root = search_semrelate(conlls, "Root");
-//    action.action = rootToAction(root);
-//    auto &&sems = search_semparent(conlls, root.id);
-//    auto agt = search_semrelate(sems, "Agt");
-//    auto pat = search_semrelate(sems, "Pat");
-//    if (pat) {
-//        auto pats = search_semparent(conlls, pat.id);
-//        auto nmod = search_semrelate(pats, "Nmod");
-//        auto desc = search_semrelate(pats, "Feat");
-//        action.target = nmod.content + pat.content;
-//        auto eSucc = search_semrelate(sems, "eSucc");
-//        if(eSucc) {
-//            auto eSuccs = search_semparent(conlls, eSucc.id);
-//            for (auto e : eSuccs) {
-//                auto es = search_semparent(conlls, e.id);
-//                std::for_each(es.begin(), es.end(), [&](CONLL &a){
-//                    action.params[e.content].push_back(a.content);
-//                });
-//            }
-//        }
-//
-//    }
+    boost::depth_first_search(sem_graph_tree, vis, color_map, tree_root);
     return action;
 }
 
@@ -82,7 +54,7 @@ void ActionAnalytics::buildGraph(std::vector<CONLL> conlls) {
     sem_graph.clear();
     for (auto conll : conlls) {
         vertex_t vertex = boost::add_vertex(sem_graph);
-        g_vertex_context[vertex] = conll.content;
+        g_vertex_context[vertex] = conll.content + "|" + conll.pos;
         g_vertex_id[vertex] = conll.id;
     }
     for (auto conll : conlls) {
@@ -119,7 +91,7 @@ void ActionAnalytics::buildTree(std::vector<CONLL> conlls) {
     sem_graph_tree.clear();
     for (auto conll : conlls) {
         vertex_t vertex = boost::add_vertex(sem_graph_tree);
-        t_vertex_context[vertex] = conll.content;
+        t_vertex_context[vertex] = conll.content + "|" + conll.pos;
         t_vertex_id[vertex] = conll.id;
     }
     for (auto conll : conlls) {
@@ -151,11 +123,10 @@ void ActionAnalytics::buildTree(std::vector<CONLL> conlls) {
     tree_root = findTreeRoot();
 }
 
-std::string ActionAnalytics::rootToAction(CONLL root) {
-    bool open = std::find(OPEN_LIST.begin(), OPEN_LIST.end(), root.content) != OPEN_LIST.end();
-    bool close = !open && std::find(CLOSE_LIST.begin(), CLOSE_LIST.end(), root.content) != CLOSE_LIST.end();
-    bool setting =
-            !open && !close && std::find(SETTING_LIST.begin(), SETTING_LIST.end(), root.content) != SETTING_LIST.end();
+std::string ActionAnalytics::VToAction(std::string text) {
+    bool open = std::find(OPEN_LIST.begin(), OPEN_LIST.end(), text) != OPEN_LIST.end();
+    bool close = !open && std::find(CLOSE_LIST.begin(), CLOSE_LIST.end(), text) != CLOSE_LIST.end();
+    bool setting = !open && !close && std::find(SETTING_LIST.begin(), SETTING_LIST.end(), text) != SETTING_LIST.end();
     if (open)
         return "OPEN";
     else if (close)
@@ -174,4 +145,54 @@ ActionAnalytics::vertex_t ActionAnalytics::findTreeRoot() {
         }
     }
     return vertex_t();
+}
+
+void ActionAnalytics::discover_vertex(vertex_t v, Action &action) {
+}
+
+std::pair<std::string, std::string> ActionAnalytics::getVertextContext(vertex_t v) {
+    std::pair<std::string, std::string> pair;
+    std::string text = t_vertex_context[v];
+    pair.first = text.substr(0, text.find('|'));
+    pair.second = text.substr(text.find('|') + 1);
+    return pair;
+};
+
+
+void ActionAnalytics::examine_edge(edge_t u, Action &action) {
+    vertex_t s = boost::source(u, sem_graph_tree);
+    vertex_t t = boost::target(u, sem_graph_tree);
+    std::string u_text = t_edge_relate[u];
+    std::string s_text = t_vertex_context[s];
+    std::string s_text_1 = getVertextContext(s).first;
+    std::string s_text_2 = getVertextContext(s).second;
+    std::string t_text = t_vertex_context[t];
+    std::string t_text_1 = getVertextContext(t).first;
+    std::string t_text_2 = getVertextContext(t).second;
+    static vertex_t pat_target;
+    static vertex_t eSucc_source;
+    static vertex_t eSucc_target;
+    if(u_text == "Agt") {
+        action.source = t_text_1;
+    } else if (u_text == "Pat") {
+        pat_target = t;
+        action.target = t_text_1;
+        action.action = VToAction(s_text_1);
+    } else if (u_text == "Feat") {
+        if(pat_target == s) {
+            action.target = t_text_1 + action.target;
+        } else {
+            action.params[s_text_1].push_back(t_text_1);
+        }
+    } else if (u_text == "eSucc") {
+        eSucc_source = s;
+        eSucc_target = t;
+    } else if (u_text == "Clas") {
+        if(eSucc_target == s) {
+            action.params[getVertextContext(eSucc_source).first].push_back(t_text_1);
+        } else {
+            action.params[s_text_1].push_back(t_text_1);
+        }
+    }
+    BOOST_LOG_TRIVIAL(info) << s_text << " --- " << u_text << " ---> " << t_text;
 }
