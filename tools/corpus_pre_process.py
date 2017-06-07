@@ -1,5 +1,6 @@
 # coding=utf-8
 import csv
+import random
 import re
 
 TIME_PATTERN = '(:?\[\d{2}:\d{2}\])|(:?\[HH:MM\])'
@@ -49,7 +50,8 @@ if __name__ == '__main__':
                             start, end = m.group(1), m.group(2)
                             start = P_INF if start == '+∞' else N_INF if start == '-∞' else int(start)
                             end = P_INF if end == '+∞' else N_INF if end == '-∞' else int(end)
-                            for i in range(start, end):
+                            for i in range(start, end, random.randint(1, 1000 if (
+                                            start == P_INF or start == N_INF or end == P_INF or end == N_INF) else 1)):
                                 t = '%d' % i
                                 r = re.sub(RANG_PATTERN, t, text)
                                 out_file.write(nh + r + '\n')
