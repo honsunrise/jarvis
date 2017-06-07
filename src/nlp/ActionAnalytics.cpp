@@ -169,30 +169,34 @@ void ActionAnalytics::examine_edge(edge_t u, Action &action) {
     std::string t_text = t_vertex_context[t];
     std::string t_text_1 = getVertextContext(t).first;
     std::string t_text_2 = getVertextContext(t).second;
-    static vertex_t pat_target;
-    static vertex_t eSucc_source;
-    static vertex_t eSucc_target;
     if(u_text == "Agt") {
-        action.source = t_text_1;
+        inner_action.source.text = t_text_1;
+        inner_action.source.vertex = t;
     } else if (u_text == "Pat") {
-        pat_target = t;
-        action.target = t_text_1;
-        action.action = VToAction(s_text_1);
+        inner_action.target.text = t_text_1;
+        inner_action.target.vertex = t;
+        inner_action.action.text = VToAction(s_text_1);
+        inner_action.action.vertex = s;
     } else if (u_text == "Feat") {
-        if(pat_target == s) {
-            action.target = t_text_1 + action.target;
+        if(inner_action.target.vertex == s) {
+            inner_action.target.text = t_text_1 + inner_action.target.text;
+        } else if(inner_action.source.vertex == s) {
+            inner_action.source.text = t_text_1 + inner_action.source.text;
+        } else if(inner_action.action.vertex == s) {
+            inner_action.action.text = t_text_1 + inner_action.action.text;
         } else {
-            action.params[s_text_1].push_back(t_text_1);
+            for(std::pair<ActionItem, std::vector<ActionItem>> a : inner_action.params) {
+                if (a.first.vertex == s)
+                    a.first.text = t_text_1 + a.first.text;
+                for (auto p : a.second) {
+                    if (p.vertex == s)
+                        p.text = t_text_1 + p.text;
+                }
+            }
         }
     } else if (u_text == "eSucc") {
-        eSucc_source = s;
-        eSucc_target = t;
     } else if (u_text == "Clas") {
-        if(eSucc_target == s) {
-            action.params[getVertextContext(eSucc_source).first].push_back(t_text_1);
-        } else {
-            action.params[s_text_1].push_back(t_text_1);
-        }
+        action.params[s_text_1].push_back(t_text_1);
     }
     BOOST_LOG_TRIVIAL(info) << s_text << " --- " << u_text << " ---> " << t_text;
 }

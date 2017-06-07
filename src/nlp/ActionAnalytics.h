@@ -14,6 +14,8 @@
 #include <boost/graph/visitors.hpp>
 
 
+
+
 struct Action {
     std::string action;
     std::string target;
@@ -36,6 +38,18 @@ public:
     typedef boost::iterator_property_map<std::vector<boost::default_color_type >::iterator, vertex_index_t> color_map_t;
     typedef boost::iterator_property_map<std::vector<vertex_t >::iterator, vertex_index_t> parent_map_t;
     typedef boost::graph_as_tree<graph_t, parent_map_t> tree_t;
+
+    struct ActionItem {
+        std::string text;
+        vertex_t vertex;
+    };
+
+    struct InnerAction {
+        ActionItem action;
+        ActionItem target;
+        ActionItem source;
+        std::map<ActionItem, std::vector<ActionItem>> params;
+    };
 
     ActionAnalytics();
 
@@ -81,6 +95,7 @@ private:
     graph_t sem_graph;
     graph_t sem_graph_tree;
     vertex_t tree_root;
+    InnerAction inner_action;
 };
 
 
