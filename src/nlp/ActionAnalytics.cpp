@@ -22,6 +22,11 @@ public:
         return;
     }
 
+    template<class Edge, class Graph>
+    void back_edge(Edge u, const Graph& g) {
+        analytics->back_edge(u, action);
+    }
+
 private:
     ActionAnalytics *analytics;
     Action &action;
@@ -158,8 +163,12 @@ std::pair<std::string, std::string> ActionAnalytics::getVertextContext(vertex_t 
     return pair;
 };
 
+void ActionAnalytics::back_edge(ActionAnalytics::edge_t u, Action &action) {
+
+}
 
 void ActionAnalytics::examine_edge(edge_t u, Action &action) {
+    static edge_t last_edge;
     vertex_t s = boost::source(u, sem_graph_tree);
     vertex_t t = boost::target(u, sem_graph_tree);
     std::string u_text = t_edge_relate[u];
@@ -169,34 +178,24 @@ void ActionAnalytics::examine_edge(edge_t u, Action &action) {
     std::string t_text = t_vertex_context[t];
     std::string t_text_1 = getVertextContext(t).first;
     std::string t_text_2 = getVertextContext(t).second;
-    if(u_text == "Agt") {
-        inner_action.source.text = t_text_1;
-        inner_action.source.vertex = t;
-    } else if (u_text == "Pat") {
-        inner_action.target.text = t_text_1;
-        inner_action.target.vertex = t;
-        inner_action.action.text = VToAction(s_text_1);
-        inner_action.action.vertex = s;
-    } else if (u_text == "Feat") {
-        if(inner_action.target.vertex == s) {
-            inner_action.target.text = t_text_1 + inner_action.target.text;
-        } else if(inner_action.source.vertex == s) {
-            inner_action.source.text = t_text_1 + inner_action.source.text;
-        } else if(inner_action.action.vertex == s) {
-            inner_action.action.text = t_text_1 + inner_action.action.text;
-        } else {
-            for(std::pair<ActionItem, std::vector<ActionItem>> a : inner_action.params) {
-                if (a.first.vertex == s)
-                    a.first.text = t_text_1 + a.first.text;
-                for (auto p : a.second) {
-                    if (p.vertex == s)
-                        p.text = t_text_1 + p.text;
-                }
-            }
+
+    if (t_edge_relate(last_edge) == "eSucc") {
+        if(u_text == "Agt") {
+            parse_map[s].text = s_text_1;
+            parse_map[s].pos = A;
+            parse_map[t].text = t_text_1;
+            parse_map[t].pos = S;
+        } else if (u_text == "Pat") {
+            parse_map[s].text = s_text_1;
+            parse_map[s].pos = A;
+            parse_map[t].text = t_text_1;
+            parse_map[t].pos = T;
+        } else if (u_text == "Feat") {
+            parse_map[s].text = t_text_1 + s_text_1;
+        } else if (u_text == "Clas") {
         }
-    } else if (u_text == "eSucc") {
-    } else if (u_text == "Clas") {
-        action.params[s_text_1].push_back(t_text_1);
     }
+
+    last_edge = u;
     BOOST_LOG_TRIVIAL(info) << s_text << " --- " << u_text << " ---> " << t_text;
 }

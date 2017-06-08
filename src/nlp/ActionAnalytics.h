@@ -14,8 +14,6 @@
 #include <boost/graph/visitors.hpp>
 
 
-
-
 struct Action {
     std::string action;
     std::string target;
@@ -35,13 +33,22 @@ public:
     typedef boost::property_map<graph_t, boost::vertex_name_t>::type vertex_name_t;
     typedef boost::property_map<graph_t, boost::vertex_index2_t>::type vertex_index2_t;
     typedef boost::property_map<graph_t, boost::edge_name_t>::type edge_name_t;
-    typedef boost::iterator_property_map<std::vector<boost::default_color_type >::iterator, vertex_index_t> color_map_t;
-    typedef boost::iterator_property_map<std::vector<vertex_t >::iterator, vertex_index_t> parent_map_t;
+    typedef boost::iterator_property_map<std::vector<boost::default_color_type>::iterator, vertex_index_t> color_map_t;
+    typedef boost::iterator_property_map<std::vector<vertex_t>::iterator, vertex_index_t> parent_map_t;
     typedef boost::graph_as_tree<graph_t, parent_map_t> tree_t;
 
     struct ActionItem {
         std::string text;
         vertex_t vertex;
+    };
+
+    enum POS {
+        A, S, T, P
+    };
+
+    struct ParseItem {
+        std::string text;
+        POS pos;
     };
 
     struct InnerAction {
@@ -59,6 +66,8 @@ public:
 
     void examine_edge(edge_t u, Action &action);
 
+    void back_edge(edge_t u, Action &action);
+
 private:
     vertex_index_t g_vertex_index;
     vertex_index_t t_vertex_index;
@@ -71,6 +80,8 @@ private:
 
     edge_name_t g_edge_relate;
     edge_name_t t_edge_relate;
+
+    std::map<vertex_t, ParseItem> parse_map;
 
     std::string VToAction(std::string text);
 
