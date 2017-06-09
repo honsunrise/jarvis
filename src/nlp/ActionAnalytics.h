@@ -12,14 +12,7 @@
 #include <boost/graph/graph_utility.hpp>
 #include <boost/graph/graph_as_tree.hpp>
 #include <boost/graph/visitors.hpp>
-
-
-struct Action {
-    std::string action;
-    std::string target;
-    std::string source;
-    std::map<std::string, std::vector<std::string>> params;
-};
+#include "common.h"
 
 class ActionAnalytics {
 public:
@@ -58,7 +51,7 @@ private:
     edge_name_t g_edge_relate;
     edge_name_t t_edge_relate;
 
-    std::string VToAction(std::string text);
+    ACTIONDEF VToAction(std::string text);
 
     std::pair<std::string, std::string> getVertextContext(vertex_t v);
 

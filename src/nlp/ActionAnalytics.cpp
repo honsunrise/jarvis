@@ -123,17 +123,17 @@ void ActionAnalytics::buildTree(std::vector<CONLL> conlls) {
     tree_root = findTreeRoot();
 }
 
-std::string ActionAnalytics::VToAction(std::string text) {
+ACTIONDEF ActionAnalytics::VToAction(std::string text) {
     bool open = std::find(OPEN_LIST.begin(), OPEN_LIST.end(), text) != OPEN_LIST.end();
     bool close = !open && std::find(CLOSE_LIST.begin(), CLOSE_LIST.end(), text) != CLOSE_LIST.end();
     bool setting = !open && !close && std::find(SETTING_LIST.begin(), SETTING_LIST.end(), text) != SETTING_LIST.end();
     if (open)
-        return "OPEN";
+        return OPEN;
     else if (close)
-        return "CLOSE";
+        return CLOSE;
     else if (setting)
-        return "SETTING";
-    return "NONE";
+        return SETTING;
+    return NONE;
 }
 
 ActionAnalytics::vertex_t ActionAnalytics::findTreeRoot() {
@@ -182,16 +182,16 @@ void ActionAnalytics::examine_edge(edge_t u, Action &action) {
         if(pat_target == s) {
             action.target = t_text_1 + action.target;
         } else {
-            action.params[s_text_1].push_back(t_text_1);
+            // action.params[s_text_1].push_back(t_text_1);
         }
     } else if (u_text == "eSucc") {
         eSucc_source = s;
         eSucc_target = t;
     } else if (u_text == "Clas") {
         if(eSucc_target == s) {
-            action.params[getVertextContext(eSucc_source).first].push_back(t_text_1);
+            // action.params[getVertextContext(eSucc_source).first].push_back(t_text_1);
         } else {
-            action.params[s_text_1].push_back(t_text_1);
+            // action.params[s_text_1].push_back(t_text_1);
         }
     }
     BOOST_LOG_TRIVIAL(info) << s_text << " --- " << u_text << " ---> " << t_text;
