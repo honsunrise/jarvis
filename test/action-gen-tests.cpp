@@ -52,22 +52,22 @@ static long _action_test() {
     nlp->process("小黑打开灯。");
     nlp->end();
 
-    sleep(1);
+    sleep(2);
     nlp->start();
     nlp->process("小黑关闭新风系统。");
     nlp->end();
 
-    sleep(1);
+    sleep(2);
     nlp->start();
     nlp->process("小黑把客厅灯设置成激情模式。");
     nlp->end();
 
-    sleep(1);
+    sleep(2);
     nlp->start();
     nlp->process("小黑把灯泡设置成绿色。");
     nlp->end();
 
-    sleep(1);
+    sleep(2);
     nlp->start();
     nlp->process("小黑空调多少度？");
     nlp->end();

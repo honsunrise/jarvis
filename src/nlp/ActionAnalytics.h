@@ -13,6 +13,7 @@
 #include <boost/graph/graph_as_tree.hpp>
 #include <boost/graph/visitors.hpp>
 #include "common.h"
+#include "PatternInspired.h"
 
 class ActionAnalytics {
 public:
@@ -34,9 +35,9 @@ public:
 
     Action analytics(std::vector<CONLL> conlls);
 
-    void discover_vertex(vertex_t v, Action &action);
+    void discover_vertex(vertex_t v);
 
-    void examine_edge(edge_t u, Action &action);
+    void examine_edge(edge_t u);
 
 private:
     vertex_index_t g_vertex_index;
@@ -52,6 +53,8 @@ private:
     edge_name_t t_edge_relate;
 
     ACTIONDEF VToAction(std::string text);
+
+    PARAM_KEY PToKey(std::string text);
 
     std::pair<std::string, std::string> getVertextContext(vertex_t v);
 
@@ -74,6 +77,7 @@ private:
     graph_t sem_graph;
     graph_t sem_graph_tree;
     vertex_t tree_root;
+    PatternInspired inspired;
 };
 
 

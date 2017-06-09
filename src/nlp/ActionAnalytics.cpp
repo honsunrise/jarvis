@@ -8,23 +8,22 @@
 
 class Visitor : public boost::default_dfs_visitor {
 public:
-    Visitor(ActionAnalytics *analytics, Action &action) : analytics(analytics), action(action) {}
+    Visitor(ActionAnalytics *analytics) : analytics(analytics){}
 
     template<class Vertex, class Graph>
     void discover_vertex(Vertex v, const Graph &g) {
-        analytics->discover_vertex(v, action);
+        analytics->discover_vertex(v);
         return;
     }
 
     template<class Edge, class Graph>
     void examine_edge(Edge u, const Graph &g) {
-        analytics->examine_edge(u, action);
+        analytics->examine_edge(u);
         return;
     }
 
 private:
     ActionAnalytics *analytics;
-    Action &action;
 };
 
 ActionAnalytics::ActionAnalytics() {
@@ -40,13 +39,14 @@ ActionAnalytics::ActionAnalytics() {
 }
 
 Action ActionAnalytics::analytics(std::vector<CONLL> conlls) {
-    Action action;
     buildGraph(conlls);
     buildTree(conlls);
-    Visitor vis(this, action);
+    Visitor vis(this);
     std::vector<boost::default_color_type> color_map_r(boost::num_vertices(sem_graph_tree));
     auto color_map = boost::make_iterator_property_map(color_map_r.begin(), t_vertex_index);
+    inspired.start();
     boost::depth_first_search(sem_graph_tree, vis, color_map, tree_root);
+    Action action = inspired.end();
     return action;
 }
 
@@ -136,6 +136,10 @@ ACTIONDEF ActionAnalytics::VToAction(std::string text) {
     return NONE;
 }
 
+PARAM_KEY ActionAnalytics::PToKey(std::string text) {
+    return TIME;
+}
+
 ActionAnalytics::vertex_t ActionAnalytics::findTreeRoot() {
     vertex_iterator_t vertexIt, vertexEnd;
     boost::tie(vertexIt, vertexEnd) = boost::vertices(sem_graph_tree);
@@ -147,7 +151,7 @@ ActionAnalytics::vertex_t ActionAnalytics::findTreeRoot() {
     return vertex_t();
 }
 
-void ActionAnalytics::discover_vertex(vertex_t v, Action &action) {
+void ActionAnalytics::discover_vertex(vertex_t v) {
 }
 
 std::pair<std::string, std::string> ActionAnalytics::getVertextContext(vertex_t v) {
@@ -159,7 +163,8 @@ std::pair<std::string, std::string> ActionAnalytics::getVertextContext(vertex_t 
 };
 
 
-void ActionAnalytics::examine_edge(edge_t u, Action &action) {
+void ActionAnalytics::examine_edge(edge_t u) {
+    static edge_t last_edge;
     vertex_t s = boost::source(u, sem_graph_tree);
     vertex_t t = boost::target(u, sem_graph_tree);
     std::string u_text = t_edge_relate[u];
@@ -169,30 +174,6 @@ void ActionAnalytics::examine_edge(edge_t u, Action &action) {
     std::string t_text = t_vertex_context[t];
     std::string t_text_1 = getVertextContext(t).first;
     std::string t_text_2 = getVertextContext(t).second;
-    static vertex_t pat_target;
-    static vertex_t eSucc_source;
-    static vertex_t eSucc_target;
-    if(u_text == "Agt") {
-        action.source = t_text_1;
-    } else if (u_text == "Pat") {
-        pat_target = t;
-        action.target = t_text_1;
-        action.action = VToAction(s_text_1);
-    } else if (u_text == "Feat") {
-        if(pat_target == s) {
-            action.target = t_text_1 + action.target;
-        } else {
-            // action.params[s_text_1].push_back(t_text_1);
-        }
-    } else if (u_text == "eSucc") {
-        eSucc_source = s;
-        eSucc_target = t;
-    } else if (u_text == "Clas") {
-        if(eSucc_target == s) {
-            // action.params[getVertextContext(eSucc_source).first].push_back(t_text_1);
-        } else {
-            // action.params[s_text_1].push_back(t_text_1);
-        }
-    }
+    inspired.feed(s_text, u_text, t_text);
     BOOST_LOG_TRIVIAL(info) << s_text << " --- " << u_text << " ---> " << t_text;
 }

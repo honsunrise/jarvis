@@ -12,7 +12,7 @@ typedef enum {
 } ACTIONDEF;
 
 typedef enum {
-    LOCATION, TIME, COLOR, MODE, STATUS
+    LOCATION, TIME, COLOR, MODE, STATUS, DESC
 } PARAM_KEY;
 
 typedef struct _action {
