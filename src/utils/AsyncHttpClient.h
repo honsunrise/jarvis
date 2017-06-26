@@ -62,7 +62,7 @@ public:
         request_stream << "Content-Length: " << data.length() << "\r\n";
         request_stream << "Content-Type: " << (content_type == JSON ? "text/json; charset=UTF-8"
                                                                     : "application/x-www-form-urlencoded") << "\r\n";
-        request_stream << "Connection: keep-alive\r\n\r\n";
+        request_stream << "Connection: close\r\n\r\n";
         if (type == POST)
             request_stream << data;
 

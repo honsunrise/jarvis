@@ -46,10 +46,10 @@ int SelfTC::process(std::string data) {
                     [&](unsigned int code, std::vector<std::string> headers, std::string content) {
                       if (code == 200) {
                         boost::smatch mat;
-                        boost::regex reg("\\[\\(d+)\\]");
+                        boost::regex reg("\\[(\\d+)\\]");
                         boost::regex_match(content, mat, reg);
                         if (mat[1].matched)
-                          _on_result(mat[1].str() == "true");
+                          _on_result(mat[1].str() == "1");
                       } else {
                         _on_error(-1);
                       }

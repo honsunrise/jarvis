@@ -27,6 +27,8 @@ static long _classify_test() {
 
     tc->start();
     tc->process("小黑打开灯。");
+    tc->process("小黑今天天气怎么样？");
+    tc->process("小黑讲个笑话。");
     tc->end();
     tc->uninitialize();
     return 0;
