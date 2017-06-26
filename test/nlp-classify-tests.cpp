@@ -12,47 +12,28 @@
 #include <boost/log/support/date_time.hpp>
 #include <boost/core/null_deleter.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
-#include "tts/engine/IflytekTTS.h"
-#include "VoicePlayer.h"
+#include "nlp/engine/SelfTC.h"
 
-static long _tts_test() {
-    std::vector<Voice::voice_dev> &&device_list = Voice::list_playback_devices();
-    Voice::voice_dev will_open;
+static long _classify_test() {
+    SelfTC *tc = new SelfTC([&](bool is) {
+      BOOST_LOG_TRIVIAL(info) << "-------------------";
+      BOOST_LOG_TRIVIAL(info) << "Result is " << is;
+      BOOST_LOG_TRIVIAL(info) << "-------------------";
 
-    for (auto &dev : device_list) {
-        if (dev.name == "default") {
-            will_open = dev;
-        }
-        BOOST_LOG_TRIVIAL(info) << "------------------------";
-        BOOST_LOG_TRIVIAL(info) << "Device name " << dev.name;
-        BOOST_LOG_TRIVIAL(info) << "Device desc " << dev.desc;
-    }
-    BOOST_LOG_TRIVIAL(info) << "------------------------";
-    Voice::VoicePlayer voicePlayer;
-    Voice::wave_format fmt = DEFAULT_FORMAT;
-    voicePlayer.open(will_open, fmt);
-    voicePlayer.start();
-    TTS *tts = new IflytekTTS(
-            [&](const char *data, unsigned int len) {
-                if(data != nullptr)
-                    voicePlayer.play(data, len);
-            }, [](int code) {
+    }, [](int code) {
+      BOOST_LOG_TRIVIAL(info) << "Text classify Error[" << code << "]!";
+    });
+    tc->initialize();
 
-            });
-    tts->initialize();
-    tts->start();
-    tts->process("老子有一句妈买劈不知当讲不当讲老子有一句妈买劈不知当讲不当讲");
-    sleep(5);
-    tts->end();
-    tts->uninitialize();
-    voicePlayer.stop();
-    voicePlayer.close();
-    sleep(10);
+    tc->start();
+    tc->process("小黑打开灯。");
+    tc->end();
+    tc->uninitialize();
     return 0;
 }
 
-TEST (VoiceTest, TTSTest) {
-    EXPECT_EQ (0, _tts_test());
+TEST (HttpTest, GetTest) {
+    EXPECT_EQ (0, _classify_test());
 }
 
 int main(int argc, char *argv[]) {

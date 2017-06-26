@@ -29,7 +29,7 @@ set(Boost_USE_STATIC_LIBS        ON) # only find static libs
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 
-find_package(Boost 1.58.0 COMPONENTS iostreams date_time filesystem system program_options thread log)
+find_package(Boost 1.58.0 COMPONENTS iostreams date_time filesystem system program_options thread log regex)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
@@ -51,9 +51,14 @@ add_executable(action-gen-tests ${SOURCE_HTTP_FILES})
 target_link_libraries(action-gen-tests gtest_main)
 add_test(NAME action-gen-tests COMMAND action-gen-tests)
 
+set(SOURCE_HTTP_FILES nlp-classify-tests.cpp ../src/nlp/TextClassify.cpp ../src/nlp/engine/SelfTC.cpp)
+add_executable(nlp-classify-tests ${SOURCE_HTTP_FILES})
+target_link_libraries(nlp-classify-tests gtest_main)
+add_test(NAME nlp-classify-tests COMMAND nlp-classify-tests)
 
 if(Boost_FOUND)
     target_link_libraries(http-tests ${Boost_LIBRARIES})
     target_link_libraries(tts-tests ${Boost_LIBRARIES})
     target_link_libraries(action-gen-tests ${Boost_LIBRARIES})
+    target_link_libraries(nlp-classify-tests ${Boost_LIBRARIES})
 endif()
